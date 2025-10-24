@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "evacmob"
+version = "0.1.0"
+description = "Hurricane mobility simulation, analysis, and visualization."
+authors = [{ name = "Your Name", email = "you@example.com" }]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "pandas",
+  "numpy",
+  "scikit-learn",
+  "folium",
+  "geopandas",
+  "shapely",
+  "pyproj",
+  "matplotlib",
+  "typer>=0.9",  # for future CLI upgrades
+]
+
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100

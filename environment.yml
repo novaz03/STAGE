@@ -1,0 +1,16 @@
+name: evacmob
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - pandas
+  - numpy
+  - scikit-learn
+  - folium
+  - geopandas
+  - shapely
+  - pyproj
+  - matplotlib
+  - pip:
+      - typer>=0.9
