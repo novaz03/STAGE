@@ -1,67 +1,62 @@
-"""Configuration dataclasses for the evacmob pipeline."""
+"""Configuration objects for the POI language modelling pipeline."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Sequence
-
-import geopandas as gpd
-import numpy as np
-import pandas as pd
+from typing import Optional, Sequence, Tuple
 
 
 @dataclass
 class PipelineConfig:
-    hex_path: str | Path
-    poi_path: str | Path
-    states_path: str | Path | None = None
-    poi_geometry_col: str = "geometry"
-    poi_label_col: str = "label_pair"
-    poi_vector_col: str = "z"
-    poi_id_col: str = "poi_id"
-    autoencoder_hidden_dim: int = 256
-    autoencoder_latent_dim: int = 64
-    autoencoder_epochs: int = 20
-    autoencoder_lr: float = 1e-3
-    autoencoder_batch_size: int = 256
-    cluster_k: int = 5
-    recompute_embeddings: bool = False
-    poi_embedding_text_col: str | None = None
-    trip_logs_path: str | Path | None = None
-    trip_format: str = "auto"
-    trip_person_col: str = "participantId"
-    trip_join_dist_m: float = 100.0
-    trip_join_gap_hours: float = 4.0
-    trip_hard_break_hours: float = 8.0
-    nearest_poi_k: int = 10
-    nearest_poi_links: int | None = 15
-    trajectory_df_path: str | Path | None = None
-    trajectory_id_col: str = "traj_id"
-    trajectory_feature_cols: Sequence[str] | None = None
-    visualization_path: str | Path | None = None
-    visualization_inset_bounds: Sequence[float] | None = None
-    device: str | None = None
-    llm_prompt: str | None = None
-    llm_batch_size: int = 32
-    llm_model_name: str | None = None
-    llm_tokenizer_name: str | None = None
-    llm_max_length: int = 256
-    llm_embed_batch_size: int = 16
-    llm_normalize_embeddings: bool = True
-    random_state: int = 42
-    postprocess_strategy: str = "mean"
+    """
+    Parameters governing data ingestion, tokenisation, and fine-tuning.
 
+    Defaults mirror the behaviour of ``notebooks/demo.ipynb`` so that the
+    converted pipeline reproduces the original experimentation setup.
+    """
 
-@dataclass
-class PipelineArtifacts:
-    hex_gdf: gpd.GeoDataFrame
-    poi_gdf: pd.DataFrame | gpd.GeoDataFrame
-    poi_latents: np.ndarray
-    hex_features: gpd.GeoDataFrame
-    traj_latents: pd.DataFrame | None
-    cluster_labels: pd.Series | None
-    visualization_path: Path | None
-    trip_segments: gpd.GeoDataFrame | None = None
-    trip_links: gpd.GeoDataFrame | None = None
-    nearest_poi_links: pd.DataFrame | None = None
+    data_csv: Path = Path("../US_POI.csv")
+    output_dir: Path = Path("pipeline_artifacts")
+    tokenizer_base: str = "google/gemma-3-1b-it"
+    tokenizer_dirname: str = "tokenizer"
+    model_name: str = "google/gemma-3-1b-it"
+    hf_token_env_var: str = "HF_TOKEN"
+    block_size: int = 64
+    per_device_train_batch_size: int = 256
+    gradient_accumulation_steps: int = 64
+    num_train_epochs: float = 1.0
+    learning_rate: float = 3e-4
+    dataloader_num_workers: int = 4
+    fp16: bool = True
+    logging_steps: int = 10
+    save_steps: int = 30
+    save_total_limit: int = 3
+    lora_r: int = 16
+    lora_alpha: int = 32
+    lora_dropout: float = 0.1
+    lora_target_modules: Sequence[str] = field(
+        default_factory=lambda: ("q_proj", "k_proj", "v_proj", "o_proj")
+    )
+    required_special_tokens: Sequence[str] = field(
+        default_factory=lambda: ("<null_val>", "[sep]")
+    )
+    bounding_box: Optional[Tuple[float, float, float, float]] = (
+        -88.57,
+        79.95,
+        24.45,
+        32.35,
+    )
+    text_columns: Sequence[str] = field(
+        default_factory=lambda: ("TOP_CATEGORY", "SUB_CATEGORY", "LOCATION_NAME")
+    )
+    max_samples: Optional[int] = None
+
+    def tokenizer_output_dir(self) -> Path:
+        return self.output_dir / self.tokenizer_dirname
+
+    def dataset_cache_dir(self) -> Path:
+        return self.output_dir / "datasets"
+
+    def checkpoints_dir(self) -> Path:
+        return self.output_dir / "checkpoints"

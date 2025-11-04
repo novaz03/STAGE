@@ -7,12 +7,19 @@ dependencies:
   - pandas
   - numpy
   - scikit-learn
-  - folium
   - geopandas
   - shapely
   - pyproj
   - matplotlib
+  - pyarrow
+  - networkx
+  - tqdm
   - pip:
       - typer>=0.9
       - torch
       - transformers
+      - datasets
+      - huggingface_hub
+      - peft
+      - node2vec
+      - gensim

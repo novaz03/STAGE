@@ -19,9 +19,12 @@ from sklearn.preprocessing import LabelEncoder
 from tqdm.auto import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM  # Assuming these might be used later from original imports
 from peft import PeftModel
-from new_pipeline.aggregation import mean_vectors_by_group
-from new_pipeline.embedding import load_finetuned_model
-from new_pipeline.fill import compute_placeholder_latent, fill_missing_vectors
+from evacmob.pipeline import (
+    mean_vectors_by_group,
+    load_finetuned_model,
+    compute_placeholder_latent,
+    fill_missing_vectors,
+)
 import pyarrow.csv as pv
 from pyarrow.csv import ReadOptions, ParseOptions
 # ─── Configuration ───────────────────────────────────────────────────────────

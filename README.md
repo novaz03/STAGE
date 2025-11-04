@@ -25,48 +25,23 @@ Each module now has a dedicated README under `docs/modules/`:
 ## Quickstart
 
 ```bash
-# (Optional) conda env
-conda env create -f environment.yml
-conda activate evacmob
+conda env create -f environment.yaml
+conda activate new-pipeline
 
-# install in editable mode
 pip install -e .
 
 # run the CLI
 python scripts/evacmob_cli.py simulate --out outputs/sim.txt
-
-# or run the streamlined pipeline (example)
-python - <<'PY'
-from evacmob.pipeline import PipelineConfig, run_pipeline
-
-config = PipelineConfig(
-    hex_path="Hex_tesse_raw.parquet",
-    poi_path="POI_encoded_embeddings.parquet",
-    poi_vector_col="z",
-    visualization_path="outputs/hex_map.png",
-    visualization_inset_bounds=(-82.5, 27.9, -82.3, 28.1),
-    states_path="cb_2018_us_state_500k.shp",
-    trip_logs_path="DRIVES_data.csv",            # optional raw trip logs (auto-detected format)
-    trajectory_df_path="imputed_ses.parquet",    # or provide precomputed features
-    trajectory_id_col="traj_id",
-    # recompute_embeddings=True,
-    # llm_model_name="sentence-transformers/all-MiniLM-L6-v2",
-    # poi_embedding_text_col="llm_label",
-)
-run_pipeline(config)
-PY
 ```
 
 The simulation command writes `outputs/sim.txt` with `person_id,day,latitude,longitude`
 rows generated from a built-in demo dataset so you can inspect the movement traces
 without sourcing external files.
 
-Enable `recompute_embeddings` with a Hugging Face model name to regenerate POI embeddings on the fly before the autoencoder stage (see `docs/modules/pipeline/README.md` for details).
-
 ## New pipeline walkthrough (data → POI latents)
 
-The `new_pipeline/` package distils the notebooks into composable steps that can be
-run from a clean checkout. The commands below assume you have the raw files the
+The pipeline code now lives directly under `evacmob.pipeline` and mirrors the notebook
+experiments in a composable fashion. The commands below assume you have the raw files the
 notebooks relied on:
 
 | Description | Example filename |
@@ -96,7 +71,7 @@ notebooks relied on:
    Convert the raw POI table into the projection matrix of 1,152‑dim vectors:
 
    ```bash
-   python -m new_pipeline.encode_poi_embeddings \
+   python -m evacmob.pipeline.encode_poi_embeddings \
        --input-csv Hex_bound_POI.csv \
        --output-parquet POI_vec_proj_matrix.parquet \
        --checkpoint-dir /path/to/your/llm/checkpoint \
@@ -105,26 +80,13 @@ notebooks relied on:
 
    *Artifacts*: `POI_vec_proj_matrix.parquet` (one row per POI with the `concatenated_vec` column).
 
-3. **Aggregate POIs to hexagons / block groups**
-
-   The updated `data_conversion (1).py` script uses the new aggregation helpers. It
-   produces a GeoDataFrame that stores the averaged embedding per hex (`embedding`)
-   and the POI count (`poi_count`):
-
-   ```bash
-   python "data_conversion (1).py"
-   ```
-
-   Adjust the `CONFIG` entries at the top of the script if your file layout differs.
-   *Artifacts*: `POI_encoded_embeddings.parquet` with one row per hexagon (or CBG).
-
-4. **Train the bottleneck MLP on POI vectors**
+3. **Train the bottleneck MLP on POI vectors**
 
    This learns the supervised latent `z_poi` features that the notebooks used downstream:
 
    ```bash
    python - <<'PY'
-   from new_pipeline.mlp import run_mlp_training, MLPConfig
+   from evacmob.pipeline import run_mlp_training, MLPConfig
 
    run_mlp_training(
        MLPConfig(
@@ -135,6 +97,29 @@ notebooks relied on:
    )
    PY
    ```
+
+4. **Aggregate POIs to hexagons / block groups**
+
+   This step expects the `z_poi` column written by Step 3.
+
+   ```bash
+   python - <<'PY'
+   from pathlib import Path
+   from evacmob.pipeline import AggregationConfig, aggregate_poi_latents_to_hex
+
+   aggregate_poi_latents_to_hex(
+       AggregationConfig(
+           poi_geometry_csv=Path("Hex_bound_POI.csv"),
+           poi_parquet=Path("POI_vec_proj_matrix.parquet"),
+           hex_parquet=Path("Hex_tesse_raw.parquet"),
+           output_path=Path("POI_encoded_embeddings.parquet"),
+           latent_column="z_poi",
+       )
+   )
+   PY
+   ```
+
+   *Artifacts*: `POI_encoded_embeddings.parquet` with one row per hexagon (or CBG).
 
 5. **Train the trajectory autoencoder (real or synthetic data)**
 
@@ -154,8 +139,7 @@ notebooks relied on:
 
 At this point you have:
 
-- `POI_vec_proj_matrix.parquet` containing both `concatenated_vec` and the bottleneck latent
-  `z_poi`.
+- `POI_vec_proj_matrix.parquet` containing both `concatenated_vec` and the bottleneck latent `z_poi`.
 - `POI_encoded_embeddings.parquet` with a single embedding per spatial cell.
 - `models/bottleneck_mlp.pth` and `models/trajectory_autoencoder.pth` with the learned weights.
 

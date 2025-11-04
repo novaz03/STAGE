@@ -1,42 +1,76 @@
-"""Structured pipeline utilities for evacmob."""
+"""
+Utilities for running the POI language model fine-tuning pipeline.
 
-from .config import PipelineArtifacts, PipelineConfig
-from .core import run_pipeline
-from .features import (
-    aggregate_latents_to_hex,
-    cluster_latents,
-    postprocess_hex_features,
-    project_trajectories,
-    train_autoencoder_embeddings,
+Key exports:
+    - `PipelineConfig`: configuration dataclass for training runs.
+    - `main`: high-level entrypoint that executes the fine-tuning pipeline.
+    - `build_point_gdf`: helper that converts hurricane trajectory matrices into
+      a point GeoDataFrame as demonstrated in the exploratory notebooks.
+    - `build_concave_hull`: construct a concave hull around trajectory points.
+    - `load_hexagon_grid_placeholder`: stub for upcoming hex-grid integration.
+    - `MLPConfig` / `run_mlp_training`: utilities for the bottleneck MLP stage.
+    - `load_finetuned_model` / `embed_texts`: helpers for embedding POI strings.
+"""
+
+from .config import PipelineConfig
+from .data import build_point_gdf
+from .embedding import embed_texts, load_finetuned_model, compute_null_embedding
+from .aggregation import (
+    mean_vectors_by_group,
+    AggregationConfig,
+    aggregate_poi_latents_to_hex,
 )
-from .llm import (
-    LLMCallable,
-    embed_texts_with_llm,
-    evaluate_poi_labels_with_llm,
-    load_pretrained_llm,
-    recompute_poi_embeddings_with_llm,
+from .cbg import CBGLoadConfig, load_cbgses
+from .encode_poi_embeddings import EncodingConfig, encode_poi_to_parquet
+from .geometry import (
+    build_concave_hull,
+    load_hexagon_grid_placeholder,
+    generate_hex_grid_over_polygon,
+    check_hex_non_overlap,
 )
-from .trips import (
-    build_trajectory_features_from_segments,
-    load_trip_logs,
-    preprocess_trip_logs,
+from .mlp import (
+    MLPConfig,
+    run_mlp_training,
+    load_bottleneck_checkpoint,
+    class_vector_from_head,
+)
+from .fill import fill_missing_vectors, compute_placeholder_latent
+from .pipeline import main
+from .autoencoder import (
+    AutoencoderDataConfig,
+    AutoencoderModelConfig,
+    AutoencoderTrainingConfig,
+    train_autoencoder,
+    AutoencoderArtifacts,
 )
 
 __all__ = [
     "PipelineConfig",
-    "PipelineArtifacts",
-    "run_pipeline",
-    "LLMCallable",
-    "evaluate_poi_labels_with_llm",
-    "load_pretrained_llm",
-    "embed_texts_with_llm",
-    "recompute_poi_embeddings_with_llm",
-    "train_autoencoder_embeddings",
-    "aggregate_latents_to_hex",
-    "postprocess_hex_features",
-    "project_trajectories",
-    "cluster_latents",
-    "load_trip_logs",
-    "preprocess_trip_logs",
-    "build_trajectory_features_from_segments",
+    "main",
+    "build_point_gdf",
+    "build_concave_hull",
+    "load_hexagon_grid_placeholder",
+    "generate_hex_grid_over_polygon",
+    "check_hex_non_overlap",
+    "MLPConfig",
+    "run_mlp_training",
+    "load_finetuned_model",
+    "compute_null_embedding",
+    "embed_texts",
+    "EncodingConfig",
+    "encode_poi_to_parquet",
+    "CBGLoadConfig",
+    "load_cbgses",
+    "mean_vectors_by_group",
+    "AggregationConfig",
+    "aggregate_poi_latents_to_hex",
+    "load_bottleneck_checkpoint",
+    "class_vector_from_head",
+    "fill_missing_vectors",
+    "compute_placeholder_latent",
+    "AutoencoderDataConfig",
+    "AutoencoderModelConfig",
+    "AutoencoderTrainingConfig",
+    "AutoencoderArtifacts",
+    "train_autoencoder",
 ]

@@ -186,6 +186,36 @@ def build_point_gdf(csv_path: Path) -> gpd.GeoDataFrame:
     return gdf
 
 
+def assign_pois_to_hexagons(
+    poi_gdf: gpd.GeoDataFrame,
+    hex_gdf: gpd.GeoDataFrame,
+    poi_id_col: str = "PLACEKEY",
+    hex_id_col: str = "hex_id",
+    projected_crs: int | str = 5070,
+) -> gpd.GeoDataFrame:
+    """Spatially join POIs to their nearest hexagon centroid."""
+    if poi_gdf.empty:
+        raise ValueError("poi_gdf is empty; cannot assign POIs to hexagons.")
+    if hex_gdf.empty:
+        raise ValueError("hex_gdf is empty; cannot assign POIs to hexagons.")
+
+    if hex_id_col not in hex_gdf.columns:
+        hex_gdf = hex_gdf.assign(**{hex_id_col: hex_gdf.index.astype(str)})
+
+    poi_proj = poi_gdf.to_crs(projected_crs)
+    hex_proj = hex_gdf[[hex_id_col, "geometry"]].to_crs(projected_crs)
+
+    joined = gpd.sjoin_nearest(
+        poi_proj,
+        hex_proj,
+        how="left",
+        distance_col="nearest_dist",
+    )
+    joined = joined.rename(columns={f"{hex_id_col}_right": hex_id_col})
+    joined = joined.drop(columns=["index_right"], errors="ignore")
+    return joined.to_crs(poi_gdf.crs)
+
+
 def _parse_coord_string(value) -> tuple[float, float]:
     if isinstance(value, (tuple, list)) and len(value) == 2:
         return (_to_float(value[0]), _to_float(value[1]))
