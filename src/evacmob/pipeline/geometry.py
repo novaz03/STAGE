@@ -8,8 +8,7 @@ import geopandas as gpd
 from math import sqrt, cos, sin, pi
 from typing import Tuple
 
-import numpy as np
-from shapely.geometry import MultiPoint, Polygon, Point
+from shapely.geometry import MultiPoint, Polygon
 
 LOGGER = logging.getLogger(__name__)
 

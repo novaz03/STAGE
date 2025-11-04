@@ -18,7 +18,7 @@ import logging
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-from shapely import wkb, wkt
+from shapely import wkt
 from shapely.geometry import base as shapely_base
 
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable, List, Sequence, Tuple
+from typing import Sequence
 
 import torch
 import numpy as np
