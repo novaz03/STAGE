@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Optional
 
 import torch
@@ -47,4 +48,35 @@ def main(config: Optional[PipelineConfig] = None) -> None:
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Fine-tune the POI language model with LoRA.")
+    parser.add_argument("--data-csv", type=Path, default=PipelineConfig.data_csv)
+    parser.add_argument("--output-dir", type=Path, default=PipelineConfig.output_dir)
+    parser.add_argument("--tokenizer-base", default=PipelineConfig.tokenizer_base)
+    parser.add_argument("--model-name", default=PipelineConfig.model_name)
+    parser.add_argument("--block-size", type=int, default=PipelineConfig.block_size)
+    parser.add_argument("--epochs", type=float, default=PipelineConfig.num_train_epochs)
+    parser.add_argument("--learning-rate", type=float, default=PipelineConfig.learning_rate)
+    parser.add_argument(
+        "--per-device-batch-size", type=int, default=PipelineConfig.per_device_train_batch_size
+    )
+    parser.add_argument(
+        "--gradient-steps", type=int, default=PipelineConfig.gradient_accumulation_steps
+    )
+    parser.add_argument("--fp16", action="store_true", default=PipelineConfig.fp16)
+    args = parser.parse_args()
+
+    cfg = PipelineConfig(
+        data_csv=args.data_csv,
+        output_dir=args.output_dir,
+        tokenizer_base=args.tokenizer_base,
+        model_name=args.model_name,
+        block_size=args.block_size,
+        num_train_epochs=args.epochs,
+        learning_rate=args.learning_rate,
+        per_device_train_batch_size=args.per_device_batch_size,
+        gradient_accumulation_steps=args.gradient_steps,
+        fp16=args.fp16,
+    )
+    main(cfg)

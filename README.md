@@ -66,21 +66,41 @@ notebooks relied on:
    export $(grep -v '^#' .env | xargs)  # or source the file in your shell
    ```
 
-2. **Encode POIs with the fine-tuned LLM**
+2. **Fine-tune the causal language model (LoRA)**
 
-   Convert the raw POI table into the projection matrix of 1,152‑dim vectors:
+   If you need to adapt the base Gemma checkpoint to your POI corpus, run the LoRA
+   fine-tuning step first (skip this if you already have a tuned checkpoint):
+
+   ```bash
+   python -m evacmob.pipeline.pipeline \
+       --data-csv US_POI.csv \
+       --output-dir models/llm_finetune_run \
+       --tokenizer-base google/gemma-3-1b-it \
+       --model-name google/gemma-3-1b-it \
+       --epochs 1 \
+       --per-device-batch-size 256 \
+       --gradient-steps 64 \
+       --block-size 64
+   ```
+
+   *Artifacts*: updated tokenizer and LoRA weights under `models/llm_finetune_run/`.
+
+3. **Encode POIs with the fine-tuned LLM**
+
+   Convert the raw POI table into the projection matrix of 1,152‑dim vectors.
+   Point `--checkpoint-dir` to the folder produced in Step 2 (or your own checkpoint):
 
    ```bash
    python -m evacmob.pipeline.encode_poi_embeddings \
        --input-csv Hex_bound_POI.csv \
        --output-parquet POI_vec_proj_matrix.parquet \
-       --checkpoint-dir /path/to/your/llm/checkpoint \
+       --checkpoint-dir models/llm_finetune_run \
        --base-model google/gemma-3-1b-it
    ```
 
    *Artifacts*: `POI_vec_proj_matrix.parquet` (one row per POI with the `concatenated_vec` column).
 
-3. **Train the bottleneck MLP on POI vectors**
+4. **Train the bottleneck MLP on POI vectors**
 
    This learns the supervised latent `z_poi` features that the notebooks used downstream:
 
@@ -90,7 +110,7 @@ notebooks relied on:
        --checkpoint-path models/bottleneck_mlp.pth
    ```
 
-4. **Aggregate POIs to hexagons / block groups**
+5. **Aggregate POIs to hexagons / block groups**
 
    This step expects the `z_poi` column written by Step 3.
 
@@ -105,7 +125,7 @@ notebooks relied on:
 
    *Artifacts*: `POI_encoded_embeddings.parquet` with one row per hexagon (or CBG).
 
-5. **Train the trajectory autoencoder (real or synthetic data)**
+6. **Train the trajectory autoencoder (real or synthetic data)**
 
    Use the new CLI to run the Transformer autoencoder over either the real joined
    dataset or the simulated trajectories:

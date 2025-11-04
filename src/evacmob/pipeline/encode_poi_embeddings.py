@@ -7,11 +7,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Sequence
 
+import logging
+
 import numpy as np
 import pandas as pd
 import torch
 from peft import PeftModel
+from tqdm.auto import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -27,14 +32,41 @@ class EncodingConfig:
 
 
 def _load_checkpoint(config: EncodingConfig):
-    """Load tokenizer and LoRA-augmented causal LM."""
+    """Load tokenizer and causal LM (optionally with LoRA adapters)."""
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    tokenizer = AutoTokenizer.from_pretrained(config.checkpoint_dir)
+
+    checkpoint_dir = Path(config.checkpoint_dir)
+    if not checkpoint_dir.exists():
+        raise FileNotFoundError(
+            f"LoRA checkpoint directory '{checkpoint_dir}' not found. Run the fine-tuning step first."
+        )
+
+    tokenizer = AutoTokenizer.from_pretrained(checkpoint_dir)
+
     base = AutoModelForCausalLM.from_pretrained(
         config.base_model,
         attn_implementation="eager",
     ).to(device)
-    model = PeftModel.from_pretrained(base, config.checkpoint_dir).to(device).eval()
+
+    adapter_path = checkpoint_dir / "adapter_config.json"
+    if not adapter_path.exists():
+        raise FileNotFoundError(
+            f"adapter_config.json not found in '{checkpoint_dir}'. Run the fine-tuning step to produce LoRA adapters before encoding."
+        )
+
+    LOGGER.info("Applying LoRA adapters from %s", checkpoint_dir)
+    model = (
+        PeftModel.from_pretrained(  # type: ignore[arg-type]
+            base,
+            checkpoint_dir,
+            is_trainable=False,
+            strict=False,
+        )
+        .to(device)
+        .eval()
+    )
+
     return tokenizer, model, device
 
 
@@ -70,7 +102,8 @@ def _embed_texts(
     """Batch texts through the model and collect final token embeddings."""
     vectors: List[np.ndarray] = []
 
-    for start in range(0, len(texts), batch_size):
+    iterator = range(0, len(texts), batch_size)
+    for start in tqdm(iterator, desc="Encoding POIs", unit="batch"):
         batch = texts[start : start + batch_size]
         if not batch:
             continue

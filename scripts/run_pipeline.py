@@ -74,8 +74,19 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s")
+    logger = logging.getLogger("pipeline-script")
+
+    steps = [
+        ("Encoding POIs", not args.skip_encode),
+        ("Training bottleneck MLP", not args.skip_mlp),
+        ("Aggregating to hexagons", not args.skip_aggregate),
+    ]
+    total_steps = sum(flag for _, flag in steps)
+    step_idx = 0
 
     if not args.skip_encode:
+        step_idx += 1
+        logger.info("Step %s/%s: %s", step_idx, total_steps, "Encoding POIs with the LLM")
         encode_poi_to_parquet(
             EncodingConfig(
                 input_csv=args.raw_poi_csv,
@@ -86,8 +97,11 @@ def main() -> None:
                 max_length=args.max_length,
             )
         )
+        logger.info("Finished encoding POIs → %s", args.projection_parquet)
 
     if not args.skip_mlp:
+        step_idx += 1
+        logger.info("Step %s/%s: %s", step_idx, total_steps, "Training bottleneck MLP")
         run_mlp_training(
             MLPConfig(
                 input_parquet=args.projection_parquet,
@@ -96,8 +110,11 @@ def main() -> None:
                 vector_column="concatenated_vec",
             )
         )
+        logger.info("Finished MLP training → %s", args.mlp_checkpoint)
 
     if not args.skip_aggregate:
+        step_idx += 1
+        logger.info("Step %s/%s: %s", step_idx, total_steps, "Aggregating POIs to hexagons")
         aggregate_poi_latents_to_hex(
             AggregationConfig(
                 poi_geometry_csv=args.raw_poi_csv,
@@ -108,6 +125,7 @@ def main() -> None:
                 latent_column=args.latent_column,
             )
         )
+        logger.info("Finished aggregation → %s", args.aggregated_parquet)
 
 
 if __name__ == "__main__":
