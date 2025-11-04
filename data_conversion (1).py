@@ -19,6 +19,9 @@ from sklearn.preprocessing import LabelEncoder
 from tqdm.auto import tqdm
 from transformers import AutoTokenizer, AutoModelForCausalLM  # Assuming these might be used later from original imports
 from peft import PeftModel
+from new_pipeline.aggregation import mean_vectors_by_group
+from new_pipeline.embedding import load_finetuned_model
+from new_pipeline.fill import compute_placeholder_latent, fill_missing_vectors
 import pyarrow.csv as pv
 from pyarrow.csv import ReadOptions, ParseOptions
 # ─── Configuration ───────────────────────────────────────────────────────────
@@ -29,6 +32,8 @@ CONFIG = {
     "POI_FILE_PATH": "Hull_FL_poi_vec_subset.csv",
     "CHECKPOINT_PATH": "bottleneck_mlp_newdata.pth",
     "OUTPUT_PATH": "POI_encoded_embeddings.parquet",
+    "LLM_CHECKPOINT_PATH": None,
+    "BASE_MODEL": "google/gemma-3-1b-it",
     
     # Coordinate Reference Systems
     "CRS_GEOGRAPHIC": "4326",
@@ -175,24 +180,33 @@ def encode_features(model, loader, device):
 # ─── Geospatial Processing Function ──────────────────────────────────────────
 
 def assign_pois_to_hexagons(poi_gdf, hex_gdf):
-    """Reprojects and performs a nearest-neighbor join to assign POIs to hexagons."""
+    """
+    Assign POIs to hexagons and compute average embeddings per cell.
+
+    Returns a GeoDataFrame with one row per hexagon containing the averaged
+    embedding vector and POI counts.
+    """
     logging.info("Reprojecting GeoDataFrames to equal-area CRS for accurate nearest-neighbor search...")
     poi_proj = poi_gdf.to_crs(epsg=CONFIG["CRS_PROJECTED"])
     hex_proj = hex_gdf.to_crs(epsg=CONFIG["CRS_PROJECTED"])
 
     logging.info("Assigning POIs to nearest hexagon...")
     joined_gdf = gpd.sjoin_nearest(
-        poi_proj[['label_pair', 'z', 'geometry']],
+        poi_proj[["label_pair", "z", "geometry"]],
         hex_proj[["hex_id", "geometry"]],
-        how="left"
+        how="left",
     )
-    
 
-    logging.info(f"Join completed. Matched points: {joined_gdf['hex_id'].notna().sum()}/{len(poi_gdf)}")
-    
-    # Reproject final result back to geographic coordinates
-    joined_gdf = joined_gdf.to_crs(epsg=CONFIG["CRS_GEOGRAPHIC"])
-    return joined_gdf
+    matched = joined_gdf["hex_id"].notna().sum()
+    logging.info("Join completed. Matched points: %s/%s", matched, len(poi_gdf))
+
+    aggregated = mean_vectors_by_group(joined_gdf, "hex_id", "z")
+    aggregated = aggregated.rename(columns={"z": "embedding"})
+    aggregated["embedding"] = aggregated["embedding"].apply(lambda arr: arr.tolist())
+
+    hex_with_embeddings = hex_proj.merge(aggregated, on="hex_id", how="left")
+    hex_with_embeddings = hex_with_embeddings.to_crs(epsg=CONFIG["CRS_GEOGRAPHIC"])
+    return hex_with_embeddings
 
 # ─── Main Execution ──────────────────────────────────────────────────────────
 
@@ -243,6 +257,29 @@ def main():
     
     # 5. Spatially Join POIs (with new embeddings) to Hexagons
     final_joined_gdf = assign_pois_to_hexagons(poi_gdf, hex_gdf)
+
+    # 5b. Fill missing embeddings with placeholder latent
+    fallback_latent = np.zeros(CONFIG["LATENT_DIM"], dtype=np.float32)
+    if CONFIG.get("LLM_CHECKPOINT_PATH"):
+        try:
+            tokenizer, llm_model, llm_device = load_finetuned_model(
+                CONFIG["LLM_CHECKPOINT_PATH"],
+                CONFIG["BASE_MODEL"],
+                device=CONFIG["DEVICE"],
+            )
+            fallback_latent = compute_placeholder_latent(
+                tokenizer,
+                llm_model,
+                llm_device,
+                model,
+            )
+        except Exception as exc:
+            logging.warning("Failed to compute placeholder latent via LLM: %s", exc)
+
+    if "embedding" in final_joined_gdf.columns:
+        final_joined_gdf["embedding"] = fill_missing_vectors(
+            final_joined_gdf["embedding"], fallback_latent
+        )
 
     # 6. Save Final Results
     logging.info(f"Saving final joined data to {CONFIG['OUTPUT_PATH']}...")
