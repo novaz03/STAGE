@@ -3,8 +3,11 @@
 import argparse
 from pathlib import Path
 from evacmob.visualize import copy_static_report
-from evacmob.simulate import run_simulation
-from evacmob.report import write_text_report
+from evacmob.simulate import (
+    SimulationConfig,
+    build_demo_simulation_inputs,
+    run_simulation,
+)
 
 def main():
     parser = argparse.ArgumentParser(prog="evacmob", description="Hurricane mobility toolkit")
@@ -20,10 +23,21 @@ def main():
     args = parser.parse_args()
 
     if args.cmd == "simulate":
-        pts = run_simulation({})
-        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.out).write_text("\n".join(f"{lat},{lon}" for lat, lon in pts))
-        print(f"Wrote {args.out}")
+        config = SimulationConfig()
+        people_df, pois = build_demo_simulation_inputs(config=config)
+        trajectories = run_simulation(people_df, pois, config=config)
+
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+
+        lines = ["person_id,day,latitude,longitude"]
+        for person_id in sorted(trajectories):
+            for day, poi_idx in trajectories[person_id]:
+                geom = pois.at[poi_idx, "geometry"]
+                lines.append(f"{person_id},{day},{geom.y:.6f},{geom.x:.6f}")
+
+        out_path.write_text("\n".join(lines))
+        print(f"Wrote {out_path}")
 
     elif args.cmd == "copy-html":
         out = copy_static_report(args.src, args.dest)

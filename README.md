@@ -57,6 +57,10 @@ run_pipeline(config)
 PY
 ```
 
+The simulation command writes `outputs/sim.txt` with `person_id,day,latitude,longitude`
+rows generated from a built-in demo dataset so you can inspect the movement traces
+without sourcing external files.
+
 Enable `recompute_embeddings` with a Hugging Face model name to regenerate POI embeddings on the fly before the autoencoder stage (see `docs/modules/pipeline/README.md` for details).
 
 ### Slurm example

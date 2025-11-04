@@ -8,6 +8,7 @@ from typing import Dict, List, Mapping, Sequence
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+from shapely.geometry import Point
 
 
 @dataclass(frozen=True)
@@ -380,6 +381,58 @@ def simulate_population(
                     state.at[idx, "status"] = "at_home"
 
     return trajectories
+
+
+def build_demo_simulation_inputs(
+    config: SimulationConfig | None = None,
+    n_people: int = 10,
+) -> tuple[pd.DataFrame, gpd.GeoDataFrame]:
+    """Create a lightweight demo dataset mirroring the notebook schema."""
+    config = config or SimulationConfig()
+
+    demo_pois = [
+        {
+            "poi_id": "demo_home",
+            config.category_column: config.home_category,
+            config.county_column: "Lee",
+            "geometry": Point(-82.462, 26.958),
+        },
+        {
+            "poi_id": "demo_grocery",
+            config.category_column: "Grocery Stores",
+            config.county_column: "Lee",
+            "geometry": Point(-82.458, 26.961),
+        },
+        {
+            "poi_id": "demo_gas",
+            config.category_column: "Gasoline Stations",
+            config.county_column: "Lee",
+            "geometry": Point(-82.455, 26.964),
+        },
+        {
+            "poi_id": "demo_materials",
+            config.category_column: "Building Material and Supplies Dealers",
+            config.county_column: "Lee",
+            "geometry": Point(-82.452, 26.967),
+        },
+        {
+            "poi_id": "demo_hotel",
+            config.category_column: "Traveler Accommodation",
+            config.county_column: "Lee",
+            "geometry": Point(-82.449, 26.97),
+        },
+        {
+            "poi_id": "demo_hospital",
+            config.category_column: "Hospitals",
+            config.county_column: "Lee",
+            "geometry": Point(-82.446, 26.973),
+        },
+    ]
+
+    pois = gpd.GeoDataFrame(demo_pois, geometry="geometry", crs="EPSG:4326")
+    population = {"Lee": 750_000}
+    people_df = sample_population(pois, population, n_people, config=config)
+    return people_df, pois
 
 
 def run_simulation(
