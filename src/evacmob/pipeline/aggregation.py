@@ -190,3 +190,41 @@ def aggregate_poi_latents_to_hex(config: AggregationConfig) -> gpd.GeoDataFrame:
     hex_with_latents.to_parquet(output_path, index=False)
     LOGGER.info("Wrote aggregated hex embeddings to %s", output_path)
     return hex_with_latents
+
+
+def _parse_args() -> AggregationConfig:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Aggregate POI latents to spatial cells.")
+    parser.add_argument("--poi-geometry-csv", type=Path, required=True, help="CSV containing POI geometry")
+    parser.add_argument("--poi-parquet", type=Path, required=True, help="Parquet with POI latents (z_poi)")
+    parser.add_argument("--hex-parquet", type=Path, required=True, help="Hexagon tessellation parquet")
+    parser.add_argument("--output", type=Path, default=Path("POI_encoded_embeddings.parquet"))
+    parser.add_argument("--latent-column", default="z_poi")
+    parser.add_argument("--poi-id-col", default="PLACEKEY")
+    parser.add_argument("--hex-id-col", default="hex_id")
+    parser.add_argument("--geometry-col", default="geometry")
+    parser.add_argument("--projected-crs", default=5070)
+    parser.add_argument("--count-column", default="poi_count")
+    args = parser.parse_args()
+    return AggregationConfig(
+        poi_geometry_csv=args.poi_geometry_csv,
+        poi_parquet=args.poi_parquet,
+        hex_parquet=args.hex_parquet,
+        output_path=args.output,
+        latent_column=args.latent_column,
+        poi_id_col=args.poi_id_col,
+        hex_id_col=args.hex_id_col,
+        geometry_col=args.geometry_col,
+        projected_crs=args.projected_crs,
+        count_column=args.count_column,
+    )
+
+
+def main() -> None:
+    config = _parse_args()
+    aggregate_poi_latents_to_hex(config)
+
+
+if __name__ == "__main__":
+    main()

@@ -85,17 +85,9 @@ notebooks relied on:
    This learns the supervised latent `z_poi` features that the notebooks used downstream:
 
    ```bash
-   python - <<'PY'
-   from evacmob.pipeline import run_mlp_training, MLPConfig
-
-   run_mlp_training(
-       MLPConfig(
-           input_parquet="POI_vec_proj_matrix.parquet",
-           output_parquet="POI_vec_proj_matrix.parquet",  # overwrites with z_poi
-           checkpoint_path="models/bottleneck_mlp.pth",
-       )
-   )
-   PY
+   python -m evacmob.pipeline.mlp \
+       --input-parquet POI_vec_proj_matrix.parquet \
+       --checkpoint-path models/bottleneck_mlp.pth
    ```
 
 4. **Aggregate POIs to hexagons / block groups**
@@ -103,20 +95,12 @@ notebooks relied on:
    This step expects the `z_poi` column written by Step 3.
 
    ```bash
-   python - <<'PY'
-   from pathlib import Path
-   from evacmob.pipeline import AggregationConfig, aggregate_poi_latents_to_hex
-
-   aggregate_poi_latents_to_hex(
-       AggregationConfig(
-           poi_geometry_csv=Path("Hex_bound_POI.csv"),
-           poi_parquet=Path("POI_vec_proj_matrix.parquet"),
-           hex_parquet=Path("Hex_tesse_raw.parquet"),
-           output_path=Path("POI_encoded_embeddings.parquet"),
-           latent_column="z_poi",
-       )
-   )
-   PY
+   python -m evacmob.pipeline.aggregation \
+       --poi-geometry-csv Hex_bound_POI.csv \
+       --poi-parquet POI_vec_proj_matrix.parquet \
+       --hex-parquet Hex_tesse_raw.parquet \
+       --output POI_encoded_embeddings.parquet \
+       --latent-column z_poi
    ```
 
    *Artifacts*: `POI_encoded_embeddings.parquet` with one row per hexagon (or CBG).

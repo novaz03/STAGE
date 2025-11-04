@@ -27,9 +27,9 @@ should prefer the `evacmob.pipeline` implementations.
 
 1. `evacmob.pipeline.encode_poi_embeddings.encode_poi_to_parquet` – from raw POI CSV to
    `POI_vec_proj_matrix.parquet`.
-2. `evacmob.pipeline.run_mlp_training` – fit the bottleneck MLP; adds the supervised `z_poi`
+2. `python -m evacmob.pipeline.mlp` – fit the bottleneck MLP; adds the supervised `z_poi`
    latent to the projection parquet and saves a checkpoint.
-3. `evacmob.pipeline.aggregate_poi_latents_to_hex` – assign POIs to hexes / CBGs and
+3. `python -m evacmob.pipeline.aggregation` – assign POIs to hexes / CBGs and
    compute averaged embeddings per cell (expects the `z_poi` column from the previous step).
 4. `evacmob.pipeline.train_autoencoder` – train the Transformer autoencoder, writing both
    the model checkpoint and the latent matrix.

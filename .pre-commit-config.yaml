@@ -3,8 +3,18 @@ repos:
     rev: 24.8.0
     hooks:
       - id: black
+        exclude: |
+          (?x)(
+            ^notebooks/.*\.ipynb$
+            |^notebooks/.*\.py$
+          )
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.2
     hooks:
       - id: ruff
         args: [--fix]
+        exclude: |
+          (?x)(
+            ^notebooks/.*\.ipynb$
+            |^notebooks/.*\.py$
+          )

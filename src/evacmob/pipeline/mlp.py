@@ -261,6 +261,50 @@ def run_mlp_training(config: Optional[MLPConfig] = None) -> pd.DataFrame:
     return encoded
 
 
+def _parse_args() -> MLPConfig:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Train the bottleneck MLP on POI embeddings.")
+    parser.add_argument("--input-parquet", type=Path, required=True, help="Parquet file with POI embeddings.")
+    parser.add_argument(
+        "--output-parquet",
+        type=Path,
+        default=None,
+        help="Destination parquet (defaults to overwriting the input parquet).",
+    )
+    parser.add_argument(
+        "--checkpoint-path",
+        type=Path,
+        default=Path("models/bottleneck_mlp.pth"),
+        help="Where to store the trained MLP checkpoint.",
+    )
+    parser.add_argument("--device", default="auto", help="Device string ('auto', 'cpu', 'cuda').")
+    parser.add_argument("--batch-size", type=int, default=128)
+    parser.add_argument("--encoding-batch-size", type=int, default=1000)
+    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--learning-rate", type=float, default=1e-4)
+    args = parser.parse_args()
+    return MLPConfig(
+        input_parquet=args.input_parquet,
+        output_parquet=args.output_parquet or args.input_parquet,
+        checkpoint_path=args.checkpoint_path,
+        device=args.device,
+        batch_size=args.batch_size,
+        encoding_batch_size=args.encoding_batch_size,
+        epochs=args.epochs,
+        learning_rate=args.learning_rate,
+    )
+
+
+def main() -> None:
+    config = _parse_args()
+    run_mlp_training(config)
+
+
+if __name__ == "__main__":
+    main()
+
+
 def load_bottleneck_checkpoint(
     checkpoint_path: Path,
     device: Optional[torch.device] = None,
