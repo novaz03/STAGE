@@ -63,6 +63,17 @@ without sourcing external files.
 
 Enable `recompute_embeddings` with a Hugging Face model name to regenerate POI embeddings on the fly before the autoencoder stage (see `docs/modules/pipeline/README.md` for details).
 
+## Environment variables
+
+Copy `.env.example` to `.env` (ignored by git) and populate the placeholders before running any workflows that interact with the Hugging Face Hub:
+
+```bash
+cp .env.example .env
+echo "HF_TOKEN=your_real_token" >> .env   # or edit with your editor of choice
+```
+
+All scripts that require the token will read it from the `HF_TOKEN` environment variable.
+
 ### Slurm example
 
 ```bash
