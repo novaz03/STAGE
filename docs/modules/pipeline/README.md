@@ -25,7 +25,7 @@ should prefer the `evacmob.pipeline` implementations.
 
 ## Typical flow
 
-1. `python scripts/generate_hex_inputs.py` – build the filtered POI CSV and hex tessellation parquet.  SafeGraph-style headers (`...LATITUDE,LONGITUDE,GEOMETRY_TYPE,DOMAINS,...`) are expected by default; pass `--geometry-column <name>` if your source file already stores WKT geometries.
+1. `python scripts/generate_hex_inputs.py` – build the filtered POI CSV and hex tessellation parquet.  SafeGraph-style headers (`...LATITUDE,LONGITUDE,GEOMETRY_TYPE,DOMAINS,...`) are expected by default; pass `--geometry-column <name>` if your source file already stores WKT geometries.  Alternatively, use `CBGLoadConfig` / `load_cbgses` to generate a census block group tessellation.
 2. `python -m evacmob.pipeline.pipeline` – fine-tune the causal LM with LoRA on the POI text.
 3. `evacmob.pipeline.encode_poi_embeddings.encode_poi_to_parquet` – from raw POI CSV to
    `POI_vec_proj_matrix.parquet`.

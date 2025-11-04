@@ -75,7 +75,7 @@ notebooks relied on:
        --hex-parquet Hex_tesse_raw.parquet \
        --min-lon -88.57 --max-lon -79.95 \
        --min-lat 24.45 --max-lat 32.35 \
-        --hex-radius-m 8000
+       --hex-radius-m 8000
    ```
 
    This filters the raw POI export and builds an initial hex tessellation if you
@@ -86,6 +86,24 @@ notebooks relied on:
    the bounding-box filter.  The default configuration assumes the SafeGraph
    header (e.g. `PLACEKEY,...,LATITUDE,LONGITUDE,...,GEOMETRY_TYPE`), so
    latitude/longitude columns must be present when a geometry column is not.
+
+   If you prefer census block group tessellation, use the CBG loader:
+
+   ```bash
+   python - <<'PY'
+   from evacmob.pipeline import CBGLoadConfig, load_cbgses
+
+   cfg = CBGLoadConfig(
+       attributes_path="bg_fl_2022.xlsx",
+       geometry_path="fl_bg.geojson",
+       geometry_crs="EPSG:4326",
+   )
+   ses_gdf = load_cbgses(cfg)
+   ses_gdf.to_parquet("CBG_tessellation.parquet")
+   PY
+   ```
+
+   The downstream aggregation step accepts either the hexagon parquet or the CBG parquet.
 
 3. **Fine-tune the causal language model (LoRA)**
 
