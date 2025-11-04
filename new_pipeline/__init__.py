@@ -32,6 +32,13 @@ from .mlp import (
 )
 from .fill import fill_missing_vectors, compute_placeholder_latent
 from .pipeline import main
+from .autoencoder import (
+    AutoencoderDataConfig,
+    AutoencoderModelConfig,
+    AutoencoderTrainingConfig,
+    train_autoencoder,
+    AutoencoderArtifacts,
+)
 
 __all__ = [
     "PipelineConfig",
@@ -55,4 +62,9 @@ __all__ = [
     "class_vector_from_head",
     "fill_missing_vectors",
     "compute_placeholder_latent",
+    "AutoencoderDataConfig",
+    "AutoencoderModelConfig",
+    "AutoencoderTrainingConfig",
+    "AutoencoderArtifacts",
+    "train_autoencoder",
 ]

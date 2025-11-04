@@ -1,13 +1,37 @@
-# `evacmob.pipeline`
+# Pipeline (new workflow)
 
-The pipeline package is now split across focused submodules while keeping the public API available through `evacmob.pipeline`.
+The exploratory notebooks have been distilled into importable modules under `new_pipeline/`.
+Each component can be executed independently, allowing you to re-run specific stages without
+touching the rest of the workflow. The legacy `evacmob.pipeline` package still exists for the
+visualisation wrappers, but all data-processing / modelling code now lives here.
 
-- `config` – `PipelineConfig`, `PipelineArtifacts` dataclasses.
-- `core` – the `run_pipeline` orchestration entry point.
-- `trips` – `load_trip_logs`, `preprocess_trip_logs`, `build_trajectory_features_from_segments`.
-- `llm` – `evaluate_poi_labels_with_llm`, `load_pretrained_llm`, `embed_texts_with_llm`, `recompute_poi_embeddings_with_llm`.
-- `features` – `train_autoencoder_embeddings`, `aggregate_latents_to_hex`, `postprocess_hex_features`, `project_trajectories`, `cluster_latents`.
+## Modules
 
-### LLM-driven embeddings
+- `new_pipeline.data` – read and clean raw POI exports, tokenise Hugging Face datasets, and
+  chunk text for language-modelling tasks.
+- `new_pipeline.tokenizer` / `new_pipeline.pipeline` – load base tokenisers, extend them with
+  domain special tokens, and fine-tune a causal LM (Gemma + LoRA by default).
+- `new_pipeline.encode_poi_embeddings` – CLI/script entry point that turns the cleaned POI CSV
+  into `POI_vec_proj_matrix.parquet` using the fine-tuned checkpoint.
+- `new_pipeline.aggregation` – utilities to mean-pool POI vectors into hexagon / block-group
+  embeddings.
+- `new_pipeline.mlp` – trains the bottleneck classifier that produced the `z_poi` latents in the
+  notebooks. The helper writes the enriched parquet and saves the checkpoint.
+- `new_pipeline.autoencoder` – builds the Transformer autoencoder used for trajectory latent
+  modelling (supports real and synthetic inputs).
 
-Set `PipelineConfig.recompute_embeddings=True`, along with `llm_model_name` (and optional tokenizer/device overrides), to regenerate POI embeddings from notebook text fields at runtime. The pipeline mean-pools the model’s last hidden state with optional L2 normalisation before handing the vectors to the autoencoder stage.
+Visualisation helpers still rely on the existing `evacmob.visualize` module; everything else
+should prefer the `new_pipeline` implementations.
+
+## Typical flow
+
+1. `new_pipeline.encode_poi_embeddings.encode_poi_to_parquet` – from raw POI CSV to
+   `POI_vec_proj_matrix.parquet`.
+2. `data_conversion (1).py` (imports `new_pipeline.aggregation`) – assign POIs to hexes / CBGs and
+   compute averaged embeddings per cell.
+3. `new_pipeline.mlp.run_mlp_training` – fit the bottleneck MLP; adds the supervised `z_poi`
+   latent to the projection parquet and saves a checkpoint.
+4. `new_pipeline.autoencoder.train_autoencoder` – train the Transformer autoencoder, writing both
+   the model checkpoint and the latent matrix.
+
+See the top-level `README.md` for concrete command examples.

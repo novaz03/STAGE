@@ -63,16 +63,104 @@ without sourcing external files.
 
 Enable `recompute_embeddings` with a Hugging Face model name to regenerate POI embeddings on the fly before the autoencoder stage (see `docs/modules/pipeline/README.md` for details).
 
-## Environment variables
+## New pipeline walkthrough (data → POI latents)
 
-Copy `.env.example` to `.env` (ignored by git) and populate the placeholders before running any workflows that interact with the Hugging Face Hub:
+The `new_pipeline/` package distils the notebooks into composable steps that can be
+run from a clean checkout. The commands below assume you have the raw files the
+notebooks relied on:
 
-```bash
-cp .env.example .env
-echo "HF_TOKEN=your_real_token" >> .env   # or edit with your editor of choice
-```
+| Description | Example filename |
+|-------------|------------------|
+| Full raw POI export | `US_POI.csv` |
+| POI subset already filtered to the study hull | `Hex_bound_POI.csv` |
+| Hex tessellation for the study region | `Hex_tesse_raw.parquet` |
+| Hurricane trajectory matrices / metadata (for concave hull + AE) | `hurricane_matrix.csv`, `simulated_traj_points.parquet` or real equivalents |
 
-All scripts that require the token will read it from the `HF_TOKEN` environment variable.
+1. **Create the environment**
+
+   ```bash
+   conda env create -f environment.yaml
+   conda activate new-pipeline
+   ```
+
+   Copy `.env.example` to `.env`, populate `HF_TOKEN`, and export it before running any
+   Hugging Face operations:
+
+   ```bash
+   cp .env.example .env
+   export $(grep -v '^#' .env | xargs)  # or source the file in your shell
+   ```
+
+2. **Encode POIs with the fine-tuned LLM**
+
+   Convert the raw POI table into the projection matrix of 1,152‑dim vectors:
+
+   ```bash
+   python -m new_pipeline.encode_poi_embeddings \
+       --input-csv Hex_bound_POI.csv \
+       --output-parquet POI_vec_proj_matrix.parquet \
+       --checkpoint-dir /path/to/your/llm/checkpoint \
+       --base-model google/gemma-3-1b-it
+   ```
+
+   *Artifacts*: `POI_vec_proj_matrix.parquet` (one row per POI with the `concatenated_vec` column).
+
+3. **Aggregate POIs to hexagons / block groups**
+
+   The updated `data_conversion (1).py` script uses the new aggregation helpers. It
+   produces a GeoDataFrame that stores the averaged embedding per hex (`embedding`)
+   and the POI count (`poi_count`):
+
+   ```bash
+   python "data_conversion (1).py"
+   ```
+
+   Adjust the `CONFIG` entries at the top of the script if your file layout differs.
+   *Artifacts*: `POI_encoded_embeddings.parquet` with one row per hexagon (or CBG).
+
+4. **Train the bottleneck MLP on POI vectors**
+
+   This learns the supervised latent `z_poi` features that the notebooks used downstream:
+
+   ```bash
+   python - <<'PY'
+   from new_pipeline.mlp import run_mlp_training, MLPConfig
+
+   run_mlp_training(
+       MLPConfig(
+           input_parquet="POI_vec_proj_matrix.parquet",
+           output_parquet="POI_vec_proj_matrix.parquet",  # overwrites with z_poi
+           checkpoint_path="models/bottleneck_mlp.pth",
+       )
+   )
+   PY
+   ```
+
+5. **Train the trajectory autoencoder (real or synthetic data)**
+
+   Use the new CLI to run the Transformer autoencoder over either the real joined
+   dataset or the simulated trajectories:
+
+   ```bash
+   python scripts/train_autoencoder.py \
+       --mode real \
+       --real-dataset GEOID_SES_point.parquet \
+       --checkpoint models/trajectory_autoencoder.pth \
+       --latents models/trajectory_latents.npz
+   ```
+
+   Replace `--mode real` with `--mode synthetic --synthetic-dataset simulated_traj_points.parquet`
+   for the synthetic option. The command writes both the checkpoint and the latent matrix.
+
+At this point you have:
+
+- `POI_vec_proj_matrix.parquet` containing both `concatenated_vec` and the bottleneck latent
+  `z_poi`.
+- `POI_encoded_embeddings.parquet` with a single embedding per spatial cell.
+- `models/bottleneck_mlp.pth` and `models/trajectory_autoencoder.pth` with the learned weights.
+
+These artifacts feed back into the visualization or downstream analysis notebooks exactly as before—only the
+data preparation is now scripted and reproducible.
 
 ### Slurm example
 
