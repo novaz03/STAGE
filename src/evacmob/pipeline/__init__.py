@@ -51,7 +51,10 @@ _LAZY_IMPORTS: Dict[str, Tuple[str, str]] = {
     "build_point_gdf": ("evacmob.pipeline.data", "build_point_gdf"),
     "build_concave_hull": ("evacmob.pipeline.geometry", "build_concave_hull"),
     "load_hexagon_grid_placeholder": ("evacmob.pipeline.geometry", "load_hexagon_grid_placeholder"),
-    "generate_hex_grid_over_polygon": ("evacmob.pipeline.geometry", "generate_hex_grid_over_polygon"),
+    "generate_hex_grid_over_polygon": (
+        "evacmob.pipeline.geometry",
+        "generate_hex_grid_over_polygon",
+    ),
     "check_hex_non_overlap": ("evacmob.pipeline.geometry", "check_hex_non_overlap"),
     "MLPConfig": ("evacmob.pipeline.mlp", "MLPConfig"),
     "run_mlp_training": ("evacmob.pipeline.mlp", "run_mlp_training"),
@@ -64,7 +67,10 @@ _LAZY_IMPORTS: Dict[str, Tuple[str, str]] = {
     "load_cbgses": ("evacmob.pipeline.cbg", "load_cbgses"),
     "mean_vectors_by_group": ("evacmob.pipeline.aggregation", "mean_vectors_by_group"),
     "AggregationConfig": ("evacmob.pipeline.aggregation", "AggregationConfig"),
-    "aggregate_poi_latents_to_hex": ("evacmob.pipeline.aggregation", "aggregate_poi_latents_to_hex"),
+    "aggregate_poi_latents_to_hex": (
+        "evacmob.pipeline.aggregation",
+        "aggregate_poi_latents_to_hex",
+    ),
     "load_bottleneck_checkpoint": ("evacmob.pipeline.mlp", "load_bottleneck_checkpoint"),
     "class_vector_from_head": ("evacmob.pipeline.mlp", "class_vector_from_head"),
     "fill_missing_vectors": ("evacmob.pipeline.fill", "fill_missing_vectors"),

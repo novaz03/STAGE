@@ -12,7 +12,7 @@ import logging
 import numpy as np
 import pandas as pd
 import torch
-from peft import PeftModel
+from peft import PeftModel, set_peft_logging
 from tqdm.auto import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -56,6 +56,7 @@ def _load_checkpoint(config: EncodingConfig):
         )
 
     LOGGER.info("Applying LoRA adapters from %s", checkpoint_dir)
+    set_peft_logging(LOGGER.name, logging.WARNING)
     model = (
         PeftModel.from_pretrained(  # type: ignore[arg-type]
             base,
