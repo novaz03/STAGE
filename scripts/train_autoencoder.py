@@ -21,8 +21,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train the trajectory autoencoder")
     parser.add_argument("--mode", choices=["real", "synthetic"], default="real")
     parser.add_argument("--real-dataset", type=Path, default=Path("GEOID_SES_point.parquet"))
-    parser.add_argument("--synthetic-dataset", type=Path, default=Path("simulated_traj_points.parquet"))
-    parser.add_argument("--checkpoint", type=Path, default=Path("models/trajectory_autoencoder.pth"))
+    parser.add_argument(
+        "--synthetic-dataset", type=Path, default=Path("simulated_traj_points.parquet")
+    )
+    parser.add_argument(
+        "--checkpoint", type=Path, default=Path("models/trajectory_autoencoder.pth")
+    )
     parser.add_argument("--latents", type=Path, default=Path("models/trajectory_latents.npz"))
     parser.add_argument("--epochs", type=int, default=300)
     parser.add_argument("--device", type=str, default=None)

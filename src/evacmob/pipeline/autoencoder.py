@@ -207,7 +207,9 @@ class PositionalEncodingTimeOfDay(nn.Module):
         super().__init__()
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len, dtype=torch.float32).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2, dtype=torch.float32) * (-np.log(10000.0) / d_model))
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2, dtype=torch.float32) * (-np.log(10000.0) / d_model)
+        )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         self.register_buffer("pe", pe.unsqueeze(0), persistent=False)
@@ -217,7 +219,9 @@ class PositionalEncodingTimeOfDay(nn.Module):
         self.hod_scale = nn.Parameter(torch.tensor(1.0))
 
     @torch.no_grad()
-    def _hours_from_start(self, batch: int, length: int, device: torch.device, start_hour) -> torch.Tensor:
+    def _hours_from_start(
+        self, batch: int, length: int, device: torch.device, start_hour
+    ) -> torch.Tensor:
         idx = torch.arange(length, device=device).unsqueeze(0)
         if isinstance(start_hour, int):
             start = torch.full((batch, 1), start_hour, device=device, dtype=torch.long)
@@ -225,7 +229,9 @@ class PositionalEncodingTimeOfDay(nn.Module):
             start = torch.as_tensor(start_hour, device=device).view(batch, 1).long()
         return (start + idx) % 24
 
-    def forward(self, x: torch.Tensor, *, hours: Optional[torch.Tensor] = None, start_hour=None) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, *, hours: Optional[torch.Tensor] = None, start_hour=None
+    ) -> torch.Tensor:
         batch, length, _ = x.shape
         device = x.device
 
@@ -233,7 +239,9 @@ class PositionalEncodingTimeOfDay(nn.Module):
 
         if hours is None:
             if start_hour is None:
-                raise ValueError("Provide either `hours` or `start_hour` to PositionalEncodingTimeOfDay.")
+                raise ValueError(
+                    "Provide either `hours` or `start_hour` to PositionalEncodingTimeOfDay."
+                )
             hours = self._hours_from_start(batch, length, device, start_hour)
         else:
             hours = torch.as_tensor(hours, device=device, dtype=torch.long)
@@ -349,7 +357,11 @@ def _prepare_vector(series: pd.Series) -> List[np.ndarray]:
             arr = np.asarray(value, dtype=np.float32)
         elif isinstance(value, str):
             stripped = value.strip().strip("[]")
-            arr = np.fromstring(stripped, sep=" ", dtype=np.float32) if stripped else np.zeros(dim or 0, dtype=np.float32)
+            arr = (
+                np.fromstring(stripped, sep=" ", dtype=np.float32)
+                if stripped
+                else np.zeros(dim or 0, dtype=np.float32)
+            )
         else:
             try:
                 arr = np.asarray(value, dtype=np.float32)
@@ -373,7 +385,9 @@ def _prepare_vector(series: pd.Series) -> List[np.ndarray]:
     return vectors
 
 
-def load_trajectory_features(config: AutoencoderDataConfig) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+def load_trajectory_features(
+    config: AutoencoderDataConfig,
+) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
     """
     Load trajectory features and build dictionaries expected by the Dataset.
     """
@@ -421,7 +435,9 @@ def load_trajectory_features(config: AutoencoderDataConfig) -> Tuple[Dict[str, n
 
 
 @torch.no_grad()
-def estimate_feature_stats(loader: DataLoader, device: torch.device) -> Tuple[torch.Tensor, torch.Tensor]:
+def estimate_feature_stats(
+    loader: DataLoader, device: torch.device
+) -> Tuple[torch.Tensor, torch.Tensor]:
     """Estimate per-feature mean/std over observed (non-padded) entries."""
     sum_, sumsq, count = None, None, None
 
@@ -660,9 +676,13 @@ def train_autoencoder(
             optimizer.zero_grad(set_to_none=True)
 
             with torch.cuda.amp.autocast(enabled=device.type == "cuda"):
-                recon, latent = model(x_in, src_key_padding_mask=pad_mask, start_hour=data_config.start_hour)
+                recon, latent = model(
+                    x_in, src_key_padding_mask=pad_mask, start_hour=data_config.start_hour
+                )
                 if model_config.use_huber:
-                    recon_loss = masked_huber(recon, x_std_tgt, pad_mask, obs_mask, delta=model_config.huber_delta)
+                    recon_loss = masked_huber(
+                        recon, x_std_tgt, pad_mask, obs_mask, delta=model_config.huber_delta
+                    )
                 else:
                     recon_loss = masked_mse(recon, x_std_tgt, pad_mask, obs_mask)
 
@@ -743,7 +763,9 @@ def train_autoencoder(
                 )
                 break
 
-    model.load_state_dict(torch.load(training_config.checkpoint_path, map_location=device)["model_state_dict"])
+    model.load_state_dict(
+        torch.load(training_config.checkpoint_path, map_location=device)["model_state_dict"]
+    )
     model.to(device).eval()
 
     latent_matrix, traj_ids = collect_latents(model, full_loader, device, feat_mean, feat_std)
@@ -753,7 +775,11 @@ def train_autoencoder(
         latents=latent_matrix,
         traj_ids=np.array(traj_ids),
     )
-    LOGGER.info("Saved latent matrix to %s (shape=%s)", training_config.latent_output_path, latent_matrix.shape)
+    LOGGER.info(
+        "Saved latent matrix to %s (shape=%s)",
+        training_config.latent_output_path,
+        latent_matrix.shape,
+    )
 
     return AutoencoderArtifacts(
         model=model,

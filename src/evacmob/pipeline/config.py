@@ -38,9 +38,7 @@ class PipelineConfig:
     lora_target_modules: Sequence[str] = field(
         default_factory=lambda: ("q_proj", "k_proj", "v_proj", "o_proj")
     )
-    required_special_tokens: Sequence[str] = field(
-        default_factory=lambda: ("<null_val>", "[sep]")
-    )
+    required_special_tokens: Sequence[str] = field(default_factory=lambda: ("<null_val>", "[sep]"))
     bounding_box: Optional[Tuple[float, float, float, float]] = (
         -88.57,
         79.95,

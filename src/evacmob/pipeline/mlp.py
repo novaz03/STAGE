@@ -81,10 +81,7 @@ class BottleneckMLP(nn.Module):
 
 def parse_vector_column(column: pd.Series) -> List[np.ndarray]:
     """Parse stringified vectors like '[0.1 0.2 ...]' into numpy arrays."""
-    return [
-        _parse_single_vector(value)
-        for value in column
-    ]
+    return [_parse_single_vector(value) for value in column]
 
 
 def _parse_single_vector(value) -> np.ndarray:
@@ -105,13 +102,9 @@ def prepare_projection_dataframe(
     """
     sep = config.category_sep_token
     if config.concatenated_column not in df.columns:
-        raise ValueError(
-            f"Expected column '{config.concatenated_column}' in projection dataframe."
-        )
+        raise ValueError(f"Expected column '{config.concatenated_column}' in projection dataframe.")
     if config.vector_column not in df.columns:
-        raise ValueError(
-            f"Expected column '{config.vector_column}' in projection dataframe."
-        )
+        raise ValueError(f"Expected column '{config.vector_column}' in projection dataframe.")
 
     df = df.copy()
     if "geometry" in df.columns:
@@ -265,7 +258,9 @@ def _parse_args() -> MLPConfig:
     import argparse
 
     parser = argparse.ArgumentParser(description="Train the bottleneck MLP on POI embeddings.")
-    parser.add_argument("--input-parquet", type=Path, required=True, help="Parquet file with POI embeddings.")
+    parser.add_argument(
+        "--input-parquet", type=Path, required=True, help="Parquet file with POI embeddings."
+    )
     parser.add_argument(
         "--output-parquet",
         type=Path,

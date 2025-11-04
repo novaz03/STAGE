@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """Command-line interface for evacmob."""
+
 import argparse
 from pathlib import Path
 from evacmob.visualize import copy_static_report
@@ -8,6 +9,7 @@ from evacmob.simulate import (
     build_demo_simulation_inputs,
     run_simulation,
 )
+
 
 def main():
     parser = argparse.ArgumentParser(prog="evacmob", description="Hurricane mobility toolkit")
@@ -42,6 +44,7 @@ def main():
     elif args.cmd == "copy-html":
         out = copy_static_report(args.src, args.dest)
         print(f"Copied to {out}")
+
 
 if __name__ == "__main__":
     main()

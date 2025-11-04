@@ -46,10 +46,7 @@ def _ensure_concatenated(df: pd.DataFrame) -> pd.DataFrame:
     required = ("TOP_CATEGORY", "SUB_CATEGORY", "LOCATION_NAME")
     missing = [col for col in required if col not in df.columns]
     if missing:
-        raise ValueError(
-            "Missing columns required to build 'concatenated': "
-            f"{', '.join(missing)}"
-        )
+        raise ValueError(f"Missing columns required to build 'concatenated': {', '.join(missing)}")
 
     df = df.copy()
     df["concatenated"] = (
@@ -108,8 +105,7 @@ def _embed_texts(
 def _serialize_vectors(vectors: np.ndarray) -> List[str]:
     """Convert vectors to string form for compatibility with existing pipelines."""
     return [
-        "[" + " ".join(f"{float(value):.6f}" for value in row.tolist()) + "]"
-        for row in vectors
+        "[" + " ".join(f"{float(value):.6f}" for value in row.tolist()) + "]" for row in vectors
     ]
 
 

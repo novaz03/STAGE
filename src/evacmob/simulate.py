@@ -172,7 +172,9 @@ def prepare_pois_with_counties(
         predicate=predicate,
     )
 
-    return joined.rename(columns={source_field: dest_field}).drop(columns=["index_right"], errors="ignore")
+    return joined.rename(columns={source_field: dest_field}).drop(
+        columns=["index_right"], errors="ignore"
+    )
 
 
 def filter_home_locations(pois: gpd.GeoDataFrame, config: SimulationConfig) -> gpd.GeoDataFrame:
@@ -377,7 +379,10 @@ def simulate_population(
 
                 if action == "evacuating":
                     state.at[idx, "status"] = "evacuated"
-                elif action == "returning_home" and int(state.at[idx, "home_location_idx"]) == new_idx:
+                elif (
+                    action == "returning_home"
+                    and int(state.at[idx, "home_location_idx"]) == new_idx
+                ):
                     state.at[idx, "status"] = "at_home"
 
     return trajectories

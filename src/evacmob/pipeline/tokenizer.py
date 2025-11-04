@@ -31,9 +31,7 @@ def maybe_login_to_hub(config: PipelineConfig) -> None:
     hf_login(token)
 
 
-def prepare_tokenizer(
-    config: PipelineConfig, dataset
-) -> PreTrainedTokenizerBase:
+def prepare_tokenizer(config: PipelineConfig, dataset) -> PreTrainedTokenizerBase:
     """
     Load the base tokenizer, ensure special tokens exist, and persist it.
     """

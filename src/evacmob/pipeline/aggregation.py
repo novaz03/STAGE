@@ -111,7 +111,9 @@ def aggregate_poi_latents_to_hex(config: AggregationConfig) -> gpd.GeoDataFrame:
         poi_gdf = gpd.GeoDataFrame(poi_df, geometry=geometry, crs="EPSG:4326")
     else:
         if not {"LONGITUDE", "LATITUDE"}.issubset(poi_df.columns):
-            raise ValueError("POI geometry CSV must contain LONGITUDE and LATITUDE columns when geometry is absent.")
+            raise ValueError(
+                "POI geometry CSV must contain LONGITUDE and LATITUDE columns when geometry is absent."
+            )
         poi_gdf = gpd.GeoDataFrame(
             poi_df,
             geometry=gpd.points_from_xy(poi_df["LONGITUDE"], poi_df["LATITUDE"]),
@@ -153,7 +155,11 @@ def aggregate_poi_latents_to_hex(config: AggregationConfig) -> gpd.GeoDataFrame:
     hex_gdf = gpd.GeoDataFrame(hex_gdf, geometry=geometry, crs=poi_gdf.crs)
 
     joined = assign_pois_to_hexagons(
-        merged, hex_gdf, poi_id_col=config.poi_id_col, hex_id_col=config.hex_id_col, projected_crs=config.projected_crs
+        merged,
+        hex_gdf,
+        poi_id_col=config.poi_id_col,
+        hex_id_col=config.hex_id_col,
+        projected_crs=config.projected_crs,
     )
     if joined.empty:
         raise ValueError("No POIs were matched to hexagons; check the spatial inputs.")
@@ -196,9 +202,15 @@ def _parse_args() -> AggregationConfig:
     import argparse
 
     parser = argparse.ArgumentParser(description="Aggregate POI latents to spatial cells.")
-    parser.add_argument("--poi-geometry-csv", type=Path, required=True, help="CSV containing POI geometry")
-    parser.add_argument("--poi-parquet", type=Path, required=True, help="Parquet with POI latents (z_poi)")
-    parser.add_argument("--hex-parquet", type=Path, required=True, help="Hexagon tessellation parquet")
+    parser.add_argument(
+        "--poi-geometry-csv", type=Path, required=True, help="CSV containing POI geometry"
+    )
+    parser.add_argument(
+        "--poi-parquet", type=Path, required=True, help="Parquet with POI latents (z_poi)"
+    )
+    parser.add_argument(
+        "--hex-parquet", type=Path, required=True, help="Hexagon tessellation parquet"
+    )
     parser.add_argument("--output", type=Path, default=Path("POI_encoded_embeddings.parquet"))
     parser.add_argument("--latent-column", default="z_poi")
     parser.add_argument("--poi-id-col", default="PLACEKEY")

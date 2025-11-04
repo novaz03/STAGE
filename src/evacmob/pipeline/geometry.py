@@ -48,7 +48,7 @@ def load_hexagon_grid_placeholder(*_, **__) -> gpd.GeoDataFrame:
 
 def _pointy_hex_vertices(cx: float, cy: float, r: float) -> list[Tuple[float, float]]:
     """Return 6 vertices for a pointy-topped hexagon centered at (cx, cy)."""
-    angles = [pi/2, 5*pi/6, 7*pi/6, 3*pi/2, 11*pi/6, pi/6]
+    angles = [pi / 2, 5 * pi / 6, 7 * pi / 6, 3 * pi / 2, 11 * pi / 6, pi / 6]
     return [(cx + r * cos(a), cy + r * sin(a)) for a in angles]
 
 
@@ -83,8 +83,8 @@ def generate_hex_grid_over_polygon(
 
     # Pointy-topped hex grid spacing
     r = float(hex_radius_m)
-    dx = sqrt(3.0) * r       # horizontal distance between centers
-    dy = 1.5 * r             # vertical distance between centers
+    dx = sqrt(3.0) * r  # horizontal distance between centers
+    dy = 1.5 * r  # vertical distance between centers
 
     hex_polys = []
     row = 0

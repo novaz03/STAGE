@@ -53,8 +53,7 @@ def embed_texts(
     Returns a tensor of shape ``(len(texts), hidden_size)`` placed on CPU.
     """
     clean_texts = [
-        "" if text is None else str(text).replace("[sep]", tokenizer.sep_token)
-        for text in texts
+        "" if text is None else str(text).replace("[sep]", tokenizer.sep_token) for text in texts
     ]
     encoded = tokenizer(
         clean_texts,

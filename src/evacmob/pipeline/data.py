@@ -101,10 +101,7 @@ def tokenize_corpus(
             return {"input_ids": [], "attention_mask": []}
 
         concatenated = concatenated[:total_length]
-        chunks = [
-            concatenated[i : i + block_size]
-            for i in range(0, total_length, block_size)
-        ]
+        chunks = [concatenated[i : i + block_size] for i in range(0, total_length, block_size)]
         masks = [[1] * block_size for _ in chunks]
         return {"input_ids": chunks, "attention_mask": masks}
 
@@ -150,10 +147,7 @@ def build_point_gdf(csv_path: Path) -> gpd.GeoDataFrame:
 
     df = df.set_index("traj_id")
     df_long = (
-        df.stack(dropna=False)
-        .rename("coords")
-        .reset_index()
-        .rename(columns={"level_1": "pt_idx"})
+        df.stack(dropna=False).rename("coords").reset_index().rename(columns={"level_1": "pt_idx"})
     )
 
     df_long["coords"] = df_long["coords"].apply(_parse_coord_string)
@@ -161,9 +155,7 @@ def build_point_gdf(csv_path: Path) -> gpd.GeoDataFrame:
     bad_coords = df_long["coords"].apply(lambda x: not _is_valid_pair(x))
     if bad_coords.any():
         examples = df_long.loc[bad_coords, ["traj_id", "pt_idx", "coords"]].head()
-        raise ValueError(
-            f"Failed to parse some coordinate strings; first offences:\n{examples}"
-        )
+        raise ValueError(f"Failed to parse some coordinate strings; first offences:\n{examples}")
 
     df_long[["latitude", "longitude"]] = pd.DataFrame(
         df_long["coords"].tolist(), index=df_long.index, columns=["latitude", "longitude"]

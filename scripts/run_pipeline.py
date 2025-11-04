@@ -19,10 +19,24 @@ from evacmob.pipeline import (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the POI embedding pipeline")
-    parser.add_argument("--raw-poi-csv", type=Path, required=True, help="CSV containing study-area POIs with geometry")
-    parser.add_argument("--hex-parquet", type=Path, required=True, help="Hexagon tessellation parquet")
-    parser.add_argument("--llm-checkpoint", type=Path, required=True, help="Fine-tuned Hugging Face checkpoint directory")
-    parser.add_argument("--base-model", default="google/gemma-3-1b-it", help="Base causal-LM model to load")
+    parser.add_argument(
+        "--raw-poi-csv",
+        type=Path,
+        required=True,
+        help="CSV containing study-area POIs with geometry",
+    )
+    parser.add_argument(
+        "--hex-parquet", type=Path, required=True, help="Hexagon tessellation parquet"
+    )
+    parser.add_argument(
+        "--llm-checkpoint",
+        type=Path,
+        required=True,
+        help="Fine-tuned Hugging Face checkpoint directory",
+    )
+    parser.add_argument(
+        "--base-model", default="google/gemma-3-1b-it", help="Base causal-LM model to load"
+    )
     parser.add_argument(
         "--projection-parquet",
         type=Path,
@@ -41,10 +55,16 @@ def parse_args() -> argparse.Namespace:
         default=Path("POI_encoded_embeddings.parquet"),
         help="Output parquet for aggregated hex embeddings",
     )
-    parser.add_argument("--latent-column", default="z_poi", help="Column name storing bottleneck latents")
-    parser.add_argument("--placekey-col", default="PLACEKEY", help="POI identifier column used for joins")
+    parser.add_argument(
+        "--latent-column", default="z_poi", help="Column name storing bottleneck latents"
+    )
+    parser.add_argument(
+        "--placekey-col", default="PLACEKEY", help="POI identifier column used for joins"
+    )
     parser.add_argument("--batch-size", type=int, default=256, help="Batch size for LM encoding")
-    parser.add_argument("--max-length", type=int, default=512, help="Max token length for LM encoding")
+    parser.add_argument(
+        "--max-length", type=int, default=512, help="Max token length for LM encoding"
+    )
     parser.add_argument("--skip-encode", action="store_true", help="Skip LLM encoding step")
     parser.add_argument("--skip-mlp", action="store_true", help="Skip bottleneck MLP training")
     parser.add_argument("--skip-aggregate", action="store_true", help="Skip aggregation step")

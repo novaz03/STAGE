@@ -57,9 +57,7 @@ def make_points_gdf(
     df["start_geom"] = [
         _maybe_point(lon, lat) for lon, lat in zip(df[start_lon_col], df[start_lat_col])
     ]
-    df["end_geom"] = [
-        _maybe_point(lon, lat) for lon, lat in zip(df[end_lon_col], df[end_lat_col])
-    ]
+    df["end_geom"] = [_maybe_point(lon, lat) for lon, lat in zip(df[end_lon_col], df[end_lat_col])]
 
     gdf = gpd.GeoDataFrame(df, geometry="start_geom", crs=crs)
     gdf = gdf.dropna(subset=["start_geom", "end_geom", start_time_col, end_time_col])

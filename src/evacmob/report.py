@@ -12,6 +12,7 @@ import pandas as pd
 try:  # optional dependency
     from tqdm.auto import tqdm as _tqdm
 except ModuleNotFoundError:  # pragma: no cover
+
     def _tqdm(iterable, **kwargs):
         return iterable
 
@@ -45,7 +46,11 @@ def build_bottleneck_mlp(
     device: str | None = None,
 ):
     torch, nn = _require_torch()
-    device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = (
+        torch.device(device)
+        if device
+        else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    )
 
     class BottleneckMLP(nn.Module):
         def __init__(self):
@@ -145,7 +150,7 @@ def student_t_distribution(z: np.ndarray, centers: np.ndarray, alpha: float = 1.
 
 def target_distribution(q: np.ndarray) -> np.ndarray:
     """Construct the sharpened target distribution from ``q``."""
-    weight = q ** 2 / q.sum(axis=0, keepdims=True)
+    weight = q**2 / q.sum(axis=0, keepdims=True)
     return weight / weight.sum(axis=1, keepdims=True)
 
 

@@ -73,7 +73,9 @@ def build_graph_from_geodataframe(
             continue
         G.add_edge(src, dst, weight=weight)
 
-    LOGGER.info("Constructed graph with %s nodes and %s edges", G.number_of_nodes(), G.number_of_edges())
+    LOGGER.info(
+        "Constructed graph with %s nodes and %s edges", G.number_of_nodes(), G.number_of_edges()
+    )
     return G
 
 
