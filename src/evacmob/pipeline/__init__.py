@@ -43,6 +43,10 @@ __all__ = [
     "AutoencoderTrainingConfig",
     "AutoencoderArtifacts",
     "train_autoencoder",
+    "FilteredPOIConfig",
+    "HexTessellationConfig",
+    "generate_hex_bound_poi",
+    "generate_hex_tessellation",
 ]
 
 
@@ -80,6 +84,10 @@ _LAZY_IMPORTS: Dict[str, Tuple[str, str]] = {
     "AutoencoderTrainingConfig": ("evacmob.pipeline.autoencoder", "AutoencoderTrainingConfig"),
     "AutoencoderArtifacts": ("evacmob.pipeline.autoencoder", "AutoencoderArtifacts"),
     "train_autoencoder": ("evacmob.pipeline.autoencoder", "train_autoencoder"),
+    "FilteredPOIConfig": ("evacmob.pipeline.inputs", "FilteredPOIConfig"),
+    "HexTessellationConfig": ("evacmob.pipeline.inputs", "HexTessellationConfig"),
+    "generate_hex_bound_poi": ("evacmob.pipeline.inputs", "generate_hex_bound_poi"),
+    "generate_hex_tessellation": ("evacmob.pipeline.inputs", "generate_hex_tessellation"),
 }
 
 

@@ -66,7 +66,28 @@ notebooks relied on:
    export $(grep -v '^#' .env | xargs)  # or source the file in your shell
    ```
 
-2. **Fine-tune the causal language model (LoRA)**
+2. **Generate study-area inputs (optional)**
+
+   ```bash
+   python scripts/generate_hex_inputs.py \
+       --raw-poi US_POI.csv \
+       --filtered-poi Hex_bound_POI.csv \
+       --hex-parquet Hex_tesse_raw.parquet \
+       --min-lon -88.57 --max-lon -79.95 \
+       --min-lat 24.45 --max-lat 32.35 \
+        --hex-radius-m 8000
+   ```
+
+   This filters the raw POI export and builds an initial hex tessellation if you
+   don’t already have `Hex_bound_POI.csv` / `Hex_tesse_raw.parquet`.  If your
+   `US_POI.csv` already contains a WKT geometry column, pass
+   `--geometry-column GEOMETRY` (or whichever column name you use) and the tool
+   will derive the concave hull directly from that geometry instead of applying
+   the bounding-box filter.  The default configuration assumes the SafeGraph
+   header (e.g. `PLACEKEY,...,LATITUDE,LONGITUDE,...,GEOMETRY_TYPE`), so
+   latitude/longitude columns must be present when a geometry column is not.
+
+3. **Fine-tune the causal language model (LoRA)**
 
    If you need to adapt the base Gemma checkpoint to your POI corpus, run the LoRA
    fine-tuning step first (skip this if you already have a tuned checkpoint):
@@ -85,7 +106,7 @@ notebooks relied on:
 
    *Artifacts*: updated tokenizer and LoRA weights under `models/llm_finetune_run/`.
 
-3. **Encode POIs with the fine-tuned LLM**
+4. **Encode POIs with the fine-tuned LLM**
 
    Convert the raw POI table into the projection matrix of 1,152‑dim vectors.
    Point `--checkpoint-dir` to the folder produced in Step 2 (or your own checkpoint):
@@ -100,7 +121,7 @@ notebooks relied on:
 
    *Artifacts*: `POI_vec_proj_matrix.parquet` (one row per POI with the `concatenated_vec` column).
 
-4. **Train the bottleneck MLP on POI vectors**
+5. **Train the bottleneck MLP on POI vectors**
 
    This learns the supervised latent `z_poi` features that the notebooks used downstream:
 
@@ -110,7 +131,7 @@ notebooks relied on:
        --checkpoint-path models/bottleneck_mlp.pth
    ```
 
-5. **Aggregate POIs to hexagons / block groups**
+6. **Aggregate POIs to hexagons / block groups**
 
    This step expects the `z_poi` column written by Step 3.
 
@@ -125,7 +146,7 @@ notebooks relied on:
 
    *Artifacts*: `POI_encoded_embeddings.parquet` with one row per hexagon (or CBG).
 
-6. **Train the trajectory autoencoder (real or synthetic data)**
+7. **Train the trajectory autoencoder (real or synthetic data)**
 
    Use the new CLI to run the Transformer autoencoder over either the real joined
    dataset or the simulated trajectories:

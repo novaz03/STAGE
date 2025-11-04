@@ -25,14 +25,15 @@ should prefer the `evacmob.pipeline` implementations.
 
 ## Typical flow
 
-1. `python -m evacmob.pipeline.pipeline` – fine-tune the causal LM with LoRA on the POI text.
-2. `evacmob.pipeline.encode_poi_embeddings.encode_poi_to_parquet` – from raw POI CSV to
+1. `python scripts/generate_hex_inputs.py` – build the filtered POI CSV and hex tessellation parquet.  SafeGraph-style headers (`...LATITUDE,LONGITUDE,GEOMETRY_TYPE,DOMAINS,...`) are expected by default; pass `--geometry-column <name>` if your source file already stores WKT geometries.
+2. `python -m evacmob.pipeline.pipeline` – fine-tune the causal LM with LoRA on the POI text.
+3. `evacmob.pipeline.encode_poi_embeddings.encode_poi_to_parquet` – from raw POI CSV to
    `POI_vec_proj_matrix.parquet`.
-3. `python -m evacmob.pipeline.mlp` – fit the bottleneck MLP; adds the supervised `z_poi`
+4. `python -m evacmob.pipeline.mlp` – fit the bottleneck MLP; adds the supervised `z_poi`
    latent to the projection parquet and saves a checkpoint.
-4. `python -m evacmob.pipeline.aggregation` – assign POIs to hexes / CBGs and
+5. `python -m evacmob.pipeline.aggregation` – assign POIs to hexes / CBGs and
    compute averaged embeddings per cell (expects the `z_poi` column from the previous step).
-5. `evacmob.pipeline.train_autoencoder` – train the Transformer autoencoder, writing both
+6. `evacmob.pipeline.train_autoencoder` – train the Transformer autoencoder, writing both
    the model checkpoint and the latent matrix.
 
 See the top-level `README.md` for concrete command examples.
