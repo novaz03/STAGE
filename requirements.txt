@@ -1,0 +1,17 @@
+datasets
+gensim
+geopandas
+huggingface_hub
+matplotlib
+networkx
+node2vec
+numpy
+pandas
+peft
+pyarrow
+pyproj
+scikit-learn
+shapely
+torch
+tqdm
+transformers
