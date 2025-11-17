@@ -10,9 +10,9 @@ def main():
     parser = argparse.ArgumentParser(prog="evacmob", description="Hurricane mobility toolkit")
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    rep = sub.add_parser("copy-html", help="Copy an existing HTML report into docs/reports")
+    rep = sub.add_parser("copy-html", help="Copy an existing HTML report into outputs/")
     rep.add_argument("--src", type=Path, required=True)
-    rep.add_argument("--dest", type=Path, default=Path("docs/reports/trajectory_report.html"))
+    rep.add_argument("--dest", type=Path, default=Path("outputs/trajectory_report.html"))
 
     args = parser.parse_args()
 

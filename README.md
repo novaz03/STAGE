@@ -7,7 +7,6 @@ STAGE reorganizes a collection of exploratory notebooks into a coherent Python p
 - `src/evacmob/`: Core Python package plus notebook-derived reference code in `src/evacmob/notebooks/`.
 - `docs/modules/`: Module-level READMEs describing responsibilities and APIs.
 - `notebooks/`: Unmodified exploratory notebooks (optional reference).
-- `docs/reports/`: Generated artefacts such as HTML summaries.
 - `scripts/`: Command-line helpers and batch templates.
 - `tests/`: Minimal pytest scaffolding.
 

@@ -1,14 +1,14 @@
 #!/usr/bin/env python
-"""Example wrapper to copy the uploaded folium HTML into docs/reports."""
+"""Example wrapper to confirm the copied folium HTML is present."""
 
 from pathlib import Path
 
 
 def main() -> None:
-    src = Path("docs/reports/trajectory_report.html")
+    src = Path("outputs/trajectory_report.html")
     if not src.exists():
         print(
-            "No HTML found at docs/reports/trajectory_report.html. "
+            "No HTML found at outputs/trajectory_report.html. "
             "Use evacmob copy-html --src <path> first."
         )
         return
