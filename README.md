@@ -1,6 +1,6 @@
 # STAGE: A Spatio-Temporal Attention and Graph Embedding Framework for Modeling Human Mobility Trajectories
 
-STAGE reorganizes a collection of exploratory notebooks into a coherent Python package with reusable modules, documentation, and scripts for simulation, visualization, and reporting.
+STAGE reorganizes a collection of exploratory notebooks into a coherent Python package with reusable modules, documentation, and scripts for analysis, visualization, and reporting.
 
 ## File structure
 
@@ -17,7 +17,6 @@ Each module now has a dedicated README under `docs/modules/`:
 
 - `data` – data ingest and spatial joins (`docs/modules/data/README.md`)
 - `preprocess` – trip curation and feature engineering (`docs/modules/preprocess/README.md`)
-- `simulate` – cohort playbooks and trajectory simulation (`docs/modules/simulate/README.md`)
 - `report` – bottleneck MLP utilities and analytics (`docs/modules/report/README.md`)
 - `visualize` – plotting helpers (`docs/modules/visualize/README.md`)
 - `pipeline` – end-to-end orchestration (`docs/modules/pipeline/README.md`)
@@ -29,14 +28,7 @@ conda env create -f environment.yaml
 conda activate new-pipeline
 
 pip install -e .
-
-# run the CLI
-python scripts/evacmob_cli.py simulate --out outputs/sim.txt
 ```
-
-The simulation command writes `outputs/sim.txt` with `person_id,day,latitude,longitude`
-rows generated from a built-in demo dataset so you can inspect the movement traces
-without sourcing external files.
 
 ## New pipeline walkthrough (data → POI latents)
 
@@ -49,7 +41,7 @@ notebooks relied on:
 | Full raw POI export | `US_POI.csv` |
 | POI subset already filtered to the study hull | `Hex_bound_POI.csv` |
 | Hex tessellation for the study region | `Hex_tesse_raw.parquet` |
-| Hurricane trajectory matrices / metadata (for concave hull + AE) | `hurricane_matrix.csv`, `simulated_traj_points.parquet` or real equivalents |
+| Hurricane trajectory matrices / metadata (for concave hull + AE) | `hurricane_matrix.csv` |
 
 1. **Create the environment**
 
@@ -164,21 +156,18 @@ notebooks relied on:
 
    *Artifacts*: `POI_encoded_embeddings.parquet` with one row per hexagon (or CBG).
 
-7. **Train the trajectory autoencoder (real or synthetic data)**
+7. **Train the trajectory autoencoder**
 
-   Use the new CLI to run the Transformer autoencoder over either the real joined
-   dataset or the simulated trajectories:
+   Use the CLI helper to run the Transformer autoencoder over the joined trajectory dataset:
 
    ```bash
    python scripts/train_autoencoder.py \
-       --mode real \
-       --real-dataset GEOID_SES_point.parquet \
+       --dataset GEOID_SES_point.parquet \
        --checkpoint models/trajectory_autoencoder.pth \
        --latents models/trajectory_latents.npz
    ```
 
-   Replace `--mode real` with `--mode synthetic --synthetic-dataset simulated_traj_points.parquet`
-   for the synthetic option. The command writes both the checkpoint and the latent matrix.
+   The command writes both the checkpoint and the latent matrix.
 
 At this point you have:
 

@@ -18,7 +18,7 @@ everything else is driven by the modules documented here.
 - `evacmob.pipeline.mlp` – trains the bottleneck classifier that produced the `z_poi` latents in the
   notebooks. The helper writes the enriched parquet and saves the checkpoint.
 - `evacmob.pipeline.autoencoder` – builds the Transformer autoencoder used for trajectory latent
-  modelling (supports real and synthetic inputs).
+  modelling on the joined GEOID/SES dataset.
 
 Visualisation helpers still rely on the existing `evacmob.visualize` module; everything else
 should prefer the `evacmob.pipeline` implementations.

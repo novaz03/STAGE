@@ -2,8 +2,8 @@
 Trajectory autoencoder training utilities.
 
 This module consolidates the autoencoder logic that previously lived inside
-``notebooks/cbgses-Copy1.ipynb`` so that both real and synthetic data sources
-can reuse the same training pipeline.
+``notebooks/cbgses-Copy1.ipynb`` so that trajectory datasets pulled from the
+joined GEOID/SES table can reuse the same training pipeline.
 """
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -37,14 +37,9 @@ class AutoencoderDataConfig:
 
     Parameters
     ----------
-    data_mode:
-        ``"real"`` loads the real-world joined dataset,
-        ``"synthetic"`` loads a synthetic/simulated dataset.
-    real_dataset_path:
-        Expected to contain the fully joined trajectory table with per-point
+    dataset_path:
+        Parquet file containing the fully joined trajectory table with per-point
         features (e.g. ``GEOID_SES_point.parquet``).
-    synthetic_dataset_path:
-        Equivalent dataset but derived from synthetically generated trajectories.
     traj_id_column:
         Unique trajectory identifier column.
     time_column:
@@ -60,9 +55,7 @@ class AutoencoderDataConfig:
         per-time ``hours`` are not available.
     """
 
-    data_mode: Literal["real", "synthetic"] = "real"
-    real_dataset_path: Path = Path("GEOID_SES_point.parquet")
-    synthetic_dataset_path: Path = Path("simulated_traj_points.parquet")
+    dataset_path: Path = Path("GEOID_SES_point.parquet")
     traj_id_column: str = "traj_id"
     time_column: str = "pt_idx"
     embedding_columns: Sequence[str] = ("graph_embedding", "vec_weighted_avg")
@@ -331,14 +324,6 @@ class TrajTransformerAutoencoder(nn.Module):
 # ---------------------------------------------------------------------------
 
 
-def _select_dataset_path(config: AutoencoderDataConfig) -> Path:
-    if config.data_mode == "real":
-        return config.real_dataset_path
-    if config.data_mode == "synthetic":
-        return config.synthetic_dataset_path
-    raise ValueError(f"Unknown data_mode '{config.data_mode}'.")
-
-
 def _prepare_vector(series: pd.Series) -> List[np.ndarray]:
     vectors: List[np.ndarray] = []
     dim: Optional[int] = None
@@ -392,7 +377,7 @@ def load_trajectory_features(
     Load trajectory features and build dictionaries expected by the Dataset.
     """
 
-    dataset_path = _select_dataset_path(config)
+    dataset_path = config.dataset_path
     LOGGER.info("Loading trajectory dataset from %s", dataset_path)
     df = pd.read_parquet(dataset_path)
 
@@ -658,7 +643,9 @@ def train_autoencoder(
 
     training_config.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
-    LOGGER.info("Starting autoencoder training on %s (device=%s)", data_config.data_mode, device)
+    LOGGER.info(
+        "Starting autoencoder training on %s (device=%s)", data_config.dataset_path, device
+    )
 
     for epoch in tqdm(range(training_config.num_epochs), desc="AE epochs"):
         model.train()

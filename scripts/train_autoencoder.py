@@ -19,11 +19,7 @@ from evacmob.pipeline import (
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train the trajectory autoencoder")
-    parser.add_argument("--mode", choices=["real", "synthetic"], default="real")
-    parser.add_argument("--real-dataset", type=Path, default=Path("GEOID_SES_point.parquet"))
-    parser.add_argument(
-        "--synthetic-dataset", type=Path, default=Path("simulated_traj_points.parquet")
-    )
+    parser.add_argument("--dataset", type=Path, default=Path("GEOID_SES_point.parquet"))
     parser.add_argument(
         "--checkpoint", type=Path, default=Path("models/trajectory_autoencoder.pth")
     )
@@ -41,9 +37,7 @@ def main() -> None:
     args = parse_args()
 
     data_cfg = AutoencoderDataConfig(
-        data_mode=args.mode,
-        real_dataset_path=args.real_dataset,
-        synthetic_dataset_path=args.synthetic_dataset,
+        dataset_path=args.dataset,
         fixed_length=args.fixed_len,
         start_hour=args.start_hour,
     )

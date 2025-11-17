@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "evacmob"
 version = "0.1.0"
-description = "Hurricane mobility simulation, analysis, and visualization."
+description = "Hurricane mobility analysis and visualization toolkit."
 authors = [{ name = "Your Name", email = "you@example.com" }]
 readme = "README.md"
 requires-python = ">=3.10"

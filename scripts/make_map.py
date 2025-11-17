@@ -5,10 +5,10 @@ from pathlib import Path
 
 
 def main() -> None:
-    src = Path("docs/reports/simulated_trajectories.html")
+    src = Path("docs/reports/trajectory_report.html")
     if not src.exists():
         print(
-            "No HTML found at docs/reports/simulated_trajectories.html. "
+            "No HTML found at docs/reports/trajectory_report.html. "
             "Use evacmob copy-html --src <path> first."
         )
         return
