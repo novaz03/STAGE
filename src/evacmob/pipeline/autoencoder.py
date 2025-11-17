@@ -643,9 +643,7 @@ def train_autoencoder(
 
     training_config.checkpoint_path.parent.mkdir(parents=True, exist_ok=True)
 
-    LOGGER.info(
-        "Starting autoencoder training on %s (device=%s)", data_config.dataset_path, device
-    )
+    LOGGER.info("Starting autoencoder training on %s (device=%s)", data_config.dataset_path, device)
 
     for epoch in tqdm(range(training_config.num_epochs), desc="AE epochs"):
         model.train()
