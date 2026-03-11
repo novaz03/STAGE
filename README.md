@@ -17,6 +17,8 @@ Each module now has a dedicated README under `docs/modules/`:
 - `data` – data ingest and spatial joins (`docs/modules/data/README.md`)
 - `preprocess` – trip curation and feature engineering (`docs/modules/preprocess/README.md`)
 - `report` – bottleneck MLP utilities and analytics (`docs/modules/report/README.md`)
+- `simulation_generation` – random trajectory generation with semantic labels (`docs/modules/simulation_generation/README.md`)
+- `simulation_results` – clustering-vs-truth diagnostics for simulation outputs (`docs/modules/simulation_results/README.md`)
 - `visualize` – plotting helpers (`docs/modules/visualize/README.md`)
 - `pipeline` – end-to-end orchestration (`docs/modules/pipeline/README.md`)
 
