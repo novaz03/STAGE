@@ -7,9 +7,3 @@ Random trajectory generator extracted from `visualize_0822 (5).ipynb`.
   - `far_scale_m`
   - `evac_min_dist_m`
 - `save_trajectories_csv` – save step-level output to CSV.
-
-Output labels are semantic CSV labels (not legacy notebook variable names):
-
-- `compact_local`
-- `intermediate_directed`
-- `extensive_displacement`

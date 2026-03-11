@@ -11,6 +11,7 @@ __all__ = [
     "report",
     "simulation_results",
     "simulation_generation",
+    "simulation_label_assignment",
     "pipeline",
 ]
 __version__ = "0.1.0"
