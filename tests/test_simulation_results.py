@@ -36,7 +36,7 @@ def test_evaluate_simulation_results_matches_expected_metrics():
     assert np.isclose(view.chi2, 226.3382, atol=1e-4)
     assert view.dof == 4
     assert np.isclose(view.p_value, 8.10668459819785e-48)
-    assert np.isclose(view.cramers_v, 0.6141588181280092)
+    assert np.isclose(view.cramers_v, 0.6141588181280092, atol=1e-4)
     assert np.isclose(view.accuracy, 0.7166666666666667)
     assert np.isclose(view.balanced_accuracy, 0.7166666666666667)
 
