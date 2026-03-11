@@ -1,4 +1,4 @@
-"""Simulation label reassignment using a saved classifier."""
+"""Simulation label assignment using a saved classifier."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ LABEL_COMPACT_LOCAL = "compact_local"
 LABEL_INTERMEDIATE_DIRECTED = "intermediate_directed"
 LABEL_EXTENSIVE_DISPLACEMENT = "extensive_displacement"
 
-RAW_TO_SEMANTIC_LABEL = {
+RAW_TO_ASSIGNED_LABEL = {
     "sip_home_grocery": LABEL_COMPACT_LOCAL,
     "sip_hospital": LABEL_INTERMEDIATE_DIRECTED,
     "evac_out_of_zone": LABEL_EXTENSIVE_DISPLACEMENT,
@@ -24,7 +24,7 @@ def _load_model(model_path: str | Path) -> Any:
         import joblib
     except ModuleNotFoundError as exc:  # pragma: no cover
         raise ModuleNotFoundError(
-            "joblib is required to load the reassignment model. Install scikit-learn/joblib."
+            "joblib is required to load the label-assignment model."
         ) from exc
     return joblib.load(model_path)
 
@@ -41,8 +41,8 @@ def _get_feature_names(model: Any) -> list[str]:
     )
 
 
-def prepare_reassignment_features(features_df: pd.DataFrame, model: Any) -> pd.DataFrame:
-    """Build a model-aligned numeric feature frame for reassignment."""
+def prepare_label_assignment_features(features_df: pd.DataFrame, model: Any) -> pd.DataFrame:
+    """Build a model-aligned numeric feature frame for label assignment."""
     expected_cols = _get_feature_names(model)
     aligned = features_df.reindex(columns=expected_cols, fill_value=np.nan).copy()
 
@@ -55,7 +55,7 @@ def prepare_reassignment_features(features_df: pd.DataFrame, model: Any) -> pd.D
     return aligned
 
 
-def reassign_simulation_labels(
+def assign_simulation_labels(
     features_df: pd.DataFrame,
     *,
     model: Any | None = None,
@@ -64,59 +64,56 @@ def reassign_simulation_labels(
     output_col: str = "traj_cluster",
     raw_pred_col: str = "knn_k3_label_raw",
 ) -> pd.DataFrame:
-    """Predict and overwrite simulation labels with semantic reassigned labels.
-
-    `features_df` should be a trajectory-level table containing the model's feature columns.
-    """
+    """Assign simulation labels using the saved model."""
     if model is None:
         model = _load_model(model_path)
 
-    X = prepare_reassignment_features(features_df, model=model)
+    X = prepare_label_assignment_features(features_df, model=model)
     pred_raw = np.asarray(model.predict(X), dtype=object)
-    pred_semantic = (
+    pred_assigned = (
         pd.Series(pred_raw, index=features_df.index)
-        .map(RAW_TO_SEMANTIC_LABEL)
+        .map(RAW_TO_ASSIGNED_LABEL)
         .fillna(pd.Series(pred_raw, index=features_df.index))
         .to_numpy(dtype=object)
     )
 
     out = features_df.copy()
     out[raw_pred_col] = pred_raw
-    out[output_col] = pred_semantic
+    out[output_col] = pred_assigned
 
     if id_col in out.columns:
         out = out.sort_values(id_col).reset_index(drop=True)
     return out
 
 
-def build_reassigned_label_table(
-    reassigned_df: pd.DataFrame,
+def build_assigned_label_table(
+    assigned_df: pd.DataFrame,
     *,
     id_col: str = "traj_id",
     output_col: str = "traj_cluster",
 ) -> pd.DataFrame:
-    """Return one row per trajectory id for downstream merges."""
-    if id_col not in reassigned_df.columns:
-        raise KeyError(f"'{id_col}' not found in reassigned_df.")
-    if output_col not in reassigned_df.columns:
-        raise KeyError(f"'{output_col}' not found in reassigned_df.")
-    return reassigned_df[[id_col, output_col]].drop_duplicates(id_col).copy()
+    """Return one row per trajectory id."""
+    if id_col not in assigned_df.columns:
+        raise KeyError(f"'{id_col}' not found in assigned_df.")
+    if output_col not in assigned_df.columns:
+        raise KeyError(f"'{output_col}' not found in assigned_df.")
+    return assigned_df[[id_col, output_col]].drop_duplicates(id_col).copy()
 
 
-def merge_reassigned_labels(
+def merge_assigned_labels(
     target_df: pd.DataFrame,
-    reassigned_labels_df: pd.DataFrame,
+    assigned_labels_df: pd.DataFrame,
     *,
     id_col: str = "traj_id",
     output_col: str = "traj_cluster",
 ) -> pd.DataFrame:
-    """Attach reassigned labels to another table by trajectory id."""
+    """Attach assigned labels to another table by trajectory id."""
     if id_col not in target_df.columns:
         raise KeyError(f"'{id_col}' not found in target_df.")
-    if id_col not in reassigned_labels_df.columns:
-        raise KeyError(f"'{id_col}' not found in reassigned_labels_df.")
+    if id_col not in assigned_labels_df.columns:
+        raise KeyError(f"'{id_col}' not found in assigned_labels_df.")
 
-    labels = reassigned_labels_df[[id_col, output_col]].drop_duplicates(id_col)
+    labels = assigned_labels_df[[id_col, output_col]].drop_duplicates(id_col)
     merged = target_df.drop(columns=[output_col], errors="ignore").merge(
         labels,
         on=id_col,
@@ -126,8 +123,8 @@ def merge_reassigned_labels(
     return merged
 
 
-def save_reassigned_labels(df: pd.DataFrame, out_path: str | Path) -> Path:
-    """Save reassigned labels table to CSV or Parquet based on extension."""
+def save_assigned_labels(df: pd.DataFrame, out_path: str | Path) -> Path:
+    """Save label-assigned table to CSV or Parquet."""
     path = Path(out_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     suffix = path.suffix.lower()
@@ -138,3 +135,4 @@ def save_reassigned_labels(df: pd.DataFrame, out_path: str | Path) -> Path:
     else:
         raise ValueError("Unsupported output format. Use .csv or .parquet.")
     return path
+
