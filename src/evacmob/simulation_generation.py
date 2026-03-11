@@ -160,7 +160,7 @@ def generate_random_trajectories(
             mask = dist >= min_dist_m
             if not mask.any():
                 return int(ref_idx)
-            logits = (dist[mask] / max(scale_m, 1.0))
+            logits = dist[mask] / max(scale_m, 1.0)
             logits = logits - logits.max()
             weights = np.zeros_like(dist)
             weights[mask] = np.exp(logits)

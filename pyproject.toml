@@ -27,3 +27,4 @@ exclude = ["src/evacmob/notebooks"]
 
 [tool.black]
 line-length = 100
+target-version = ["py312"]

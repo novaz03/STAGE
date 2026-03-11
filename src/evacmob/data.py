@@ -21,7 +21,6 @@ import pandas as pd
 from shapely import wkt
 from shapely.geometry import base as shapely_base
 
-
 LOGGER = logging.getLogger(__name__)
 
 

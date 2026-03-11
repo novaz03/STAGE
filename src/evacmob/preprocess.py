@@ -13,7 +13,6 @@ from pandas.api.types import is_numeric_dtype
 from shapely.geometry import Point, LineString
 from pyproj import Geod
 
-
 LOGGER = logging.getLogger(__name__)
 _GEOD = Geod(ellps="WGS84")
 

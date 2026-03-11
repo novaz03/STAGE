@@ -43,4 +43,3 @@ def test_evaluate_simulation_results_matches_expected_metrics():
     report_text = format_simulation_results(view)
     assert "=== Raw contingency table: ground truth vs cluster ===" in report_text
     assert "=== Classification report ===" in report_text
-

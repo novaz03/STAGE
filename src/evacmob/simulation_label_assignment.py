@@ -23,9 +23,7 @@ def _load_model(model_path: str | Path) -> Any:
     try:
         import joblib
     except ModuleNotFoundError as exc:  # pragma: no cover
-        raise ModuleNotFoundError(
-            "joblib is required to load the label-assignment model."
-        ) from exc
+        raise ModuleNotFoundError("joblib is required to load the label-assignment model.") from exc
     return joblib.load(model_path)
 
 
@@ -135,4 +133,3 @@ def save_assigned_labels(df: pd.DataFrame, out_path: str | Path) -> Path:
     else:
         raise ValueError("Unsupported output format. Use .csv or .parquet.")
     return path
-
