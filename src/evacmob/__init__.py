@@ -12,6 +12,7 @@ __all__ = [
     "simulation_results",
     "simulation_generation",
     "simulation_label_assignment",
+    "simulation_subset",
     "pipeline",
 ]
 __version__ = "0.1.0"

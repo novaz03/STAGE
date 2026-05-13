@@ -180,6 +180,26 @@ At this point you have:
 These artifacts feed back into the visualization or downstream analysis notebooks exactly as before—only the
 data preparation is now scripted and reproducible.
 
+## Simulation input downsampling
+
+If you want a smaller labeled simulation slice, use the helper below. By default it
+keeps `reference_lab` counts at `compact_local=25`, `intermediate_directed=25`,
+and `extensive_displacement=75`, and applies the same `traj_id` subset to the
+point-level parquet when present.
+
+```bash
+python scripts/subset_simulation_inputs.py
+```
+
+Override the counts explicitly if needed:
+
+```bash
+python scripts/subset_simulation_inputs.py \
+    --compact-local 25 \
+    --intermediate-directed 25 \
+    --extensive-displacement 75
+```
+
 ### Slurm example
 
 ```bash
