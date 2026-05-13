@@ -180,16 +180,57 @@ At this point you have:
 These artifacts feed back into the visualization or downstream analysis notebooks exactly as before—only the
 data preparation is now scripted and reproducible.
 
-## Simulation input downsampling
+## Simulation workflows
 
-If you want a smaller labeled simulation slice, use the helper below. By default it
-keeps `reference_lab` counts at `compact_local=25`, `intermediate_directed=25`,
-and `extensive_displacement=75`, and applies the same `traj_id` subset to the
-point-level parquet when present.
+The simulation helpers support both the full labeled inputs already checked into
+the repo and a smaller downsampled subset. The clustering helper runs repeated
+KMeans over multiple `k` values and random seeds, then reports the best aligned
+accuracy against `reference_lab`.
+
+### Full labeled set
+
+Trajectory-level clustering using the engineered feature CSV:
+
+```bash
+python scripts/cluster_simulation_subset.py \
+    --input hourly_locations_wide_300x143_plus_reference_lab.csv \
+    --k-values 2,3,4,5,6 \
+    --n-seeds 20 \
+    --score accuracy
+```
+
+Point-level clustering starting from the parquet. This first aggregates point rows
+into one trajectory-level feature vector per `traj_id`:
+
+```bash
+python scripts/cluster_simulation_subset.py \
+    --input ref_simulation_point_gdf.parquet \
+    --k-values 2,3,4,5,6 \
+    --n-seeds 20 \
+    --score accuracy
+```
+
+Frechet-distance + DBSCAN baseline on the full point parquet:
+
+```bash
+python scripts/run_frechet_baseline.py \
+    --input-parquet ref_simulation_point_gdf.parquet \
+    --eps-percentiles 50,60,70,75,80,85,90,95 \
+    --min-samples 5 \
+    --score accuracy
+```
+
+### Downsampled subset
+
+To create the smaller labeled subset, run:
 
 ```bash
 python scripts/subset_simulation_inputs.py
 ```
+
+By default this keeps `reference_lab` counts at `compact_local=25`,
+`intermediate_directed=25`, and `extensive_displacement=75`, and applies the
+same `traj_id` subset to the point-level parquet when present.
 
 Override the counts explicitly if needed:
 
@@ -200,11 +241,7 @@ python scripts/subset_simulation_inputs.py \
     --extensive-displacement 75
 ```
 
-## Simulation clustering
-
-To estimate the best clustering correctness on a labeled subset, run the repeated
-KMeans search helper below. It tries multiple `k` values and random seeds, then
-reports the best aligned accuracy against `reference_lab`.
+Then run clustering on the subset CSV:
 
 ```bash
 python scripts/cluster_simulation_subset.py \
@@ -214,15 +251,42 @@ python scripts/cluster_simulation_subset.py \
     --score accuracy
 ```
 
-You can also point it at the point-level parquet. In that case it first aggregates
-the point rows into one trajectory-level feature vector per `traj_id`.
+Or on the subset parquet:
 
 ```bash
 python scripts/cluster_simulation_subset.py \
     --input ref_simulation_point_gdf_25_25_75.parquet \
     --k-values 2,3,4,5,6 \
-    --n-seeds 20
+    --n-seeds 20 \
+    --score accuracy
 ```
+
+Frechet-distance + DBSCAN baseline on the subset parquet:
+
+```bash
+python scripts/run_frechet_baseline.py \
+    --input-parquet ref_simulation_point_gdf_25_25_75.parquet \
+    --eps-percentiles 50,60,70,75,80,85,90,95 \
+    --min-samples 5 \
+    --score accuracy
+```
+
+To compare the engineered-feature KMeans approach against a trajectory baseline
+using discrete Frechet distance plus DBSCAN on the subset parquet, run:
+
+```bash
+python scripts/compare_simulation_clustering.py \
+    --input-parquet ref_simulation_point_gdf_25_25_75.parquet \
+    --k-values 2,3,4,5,6 \
+    --n-seeds 20 \
+    --eps-percentiles 50,60,70,75,80,85,90,95 \
+    --min-samples 5 \
+    --score accuracy
+```
+
+The comparison report prints the best aligned accuracy for both methods, plus
+the Frechet baseline's ARI, NMI, majority-mapped accuracy, cluster count, and
+noise fraction.
 
 ### Slurm example
 

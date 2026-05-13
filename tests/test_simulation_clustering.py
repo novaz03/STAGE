@@ -1,7 +1,12 @@
 import numpy as np
 import pandas as pd
 
-from evacmob.simulation_clustering import prepare_point_feature_table, search_best_kmeans
+from evacmob.simulation_clustering import (
+    discrete_frechet,
+    prepare_point_feature_table,
+    search_best_frechet_dbscan,
+    search_best_kmeans,
+)
 
 
 def test_prepare_point_feature_table_builds_one_row_per_trajectory():
@@ -59,3 +64,50 @@ def test_search_best_kmeans_finds_perfect_split_on_easy_data():
     assert result.k == 3
     assert np.isclose(result.score_value, 1.0)
     assert np.isclose(result.view.accuracy, 1.0)
+
+
+def test_discrete_frechet_is_zero_for_identical_trajectories():
+    traj = np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 1.0]], dtype=float)
+    assert np.isclose(discrete_frechet(traj, traj), 0.0)
+
+
+def test_search_best_frechet_dbscan_finds_clean_split_on_easy_trajectories():
+    points = pd.DataFrame(
+        {
+            "traj_id": [
+                "a1",
+                "a1",
+                "a2",
+                "a2",
+                "b1",
+                "b1",
+                "b2",
+                "b2",
+            ],
+            "pt_idx": [1, 2, 1, 2, 1, 2, 1, 2],
+            "latitude": [0.0, 0.001, 0.0, 0.0011, 1.0, 1.001, 1.0, 1.0011],
+            "longitude": [0.0, 0.001, 0.0001, 0.0012, 1.0, 1.001, 1.0001, 1.0012],
+            "reference_lab": [
+                "compact_local",
+                "compact_local",
+                "compact_local",
+                "compact_local",
+                "extensive_displacement",
+                "extensive_displacement",
+                "extensive_displacement",
+                "extensive_displacement",
+            ],
+        }
+    )
+
+    result = search_best_frechet_dbscan(
+        points,
+        n_resample=8,
+        min_samples=1,
+        eps_percentiles=[10, 50, 90],
+        score_name="accuracy",
+    )
+
+    assert np.isclose(result.view.accuracy, 1.0)
+    assert np.isclose(result.score_value, 1.0)
+    assert result.n_clusters >= 2
