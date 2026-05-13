@@ -12,6 +12,7 @@ import pandas as pd
 from sklearn.cluster import DBSCAN, KMeans
 from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
 from sklearn.preprocessing import StandardScaler
+from tqdm.auto import tqdm
 
 from .simulation_results import SimulationResultsView, evaluate_simulation_results
 
@@ -147,7 +148,11 @@ def prepare_point_feature_table(
 
     ordered = points.sort_values([id_col, "pt_idx"]).copy()
     labels = ordered.groupby(id_col, sort=False)[label_col].first()
-    features = ordered.groupby(id_col, sort=False).apply(_trajectory_point_stats).reset_index()
+    features = (
+        ordered.groupby(id_col, sort=False)
+        .apply(_trajectory_point_stats, include_groups=False)
+        .reset_index()
+    )
     merged = features.merge(labels.rename(label_col), on=id_col, how="left", validate="one_to_one")
 
     feature_columns = [col for col in merged.columns if col not in {id_col, label_col}]
@@ -174,7 +179,13 @@ def load_clustering_input(
             label_col=label_col,
             id_col=id_col,
         )
-        return df.assign(**{col: features[col] for col in feature_columns}), X, y_true, feature_columns, traj_ids
+        return (
+            df.assign(**{col: features[col] for col in feature_columns}),
+            X,
+            y_true,
+            feature_columns,
+            traj_ids,
+        )
 
     if suffix in {".parquet", ".pq"}:
         gdf = gpd.read_parquet(input_path)
@@ -190,6 +201,7 @@ def search_best_kmeans(
     k_values: Sequence[int],
     seeds: Sequence[int],
     score_name: str = "accuracy",
+    show_progress: bool = True,
 ) -> ClusteringSearchResult:
     """Run repeated KMeans and return the best aligned clustering result."""
     if score_name not in {"accuracy", "balanced_accuracy"}:
@@ -201,31 +213,37 @@ def search_best_kmeans(
     X_arr = np.asarray(X, dtype=float)
     y_true_arr = np.asarray(y_true, dtype=object)
 
-    for k in k_values:
-        for seed in seeds:
-            labels = KMeans(n_clusters=k, random_state=seed, n_init=20).fit_predict(X_arr)
-            view = evaluate_simulation_results(X_arr, y_true_arr, labels, best_k=k)
-            score_value = float(getattr(view, score_name))
-            leaderboard_rows.append(
-                {
-                    "k": k,
-                    "seed": seed,
-                    "accuracy": float(view.accuracy),
-                    "balanced_accuracy": float(view.balanced_accuracy),
-                    "cramers_v": float(view.cramers_v),
-                }
-            )
+    runs = [(k, seed) for k in k_values for seed in seeds]
+    run_iter = tqdm(
+        runs,
+        total=len(runs),
+        desc="KMeans search",
+        disable=not show_progress,
+    )
+    for k, seed in run_iter:
+        labels = KMeans(n_clusters=k, random_state=seed, n_init=20).fit_predict(X_arr)
+        view = evaluate_simulation_results(X_arr, y_true_arr, labels, best_k=k)
+        score_value = float(getattr(view, score_name))
+        leaderboard_rows.append(
+            {
+                "k": k,
+                "seed": seed,
+                "accuracy": float(view.accuracy),
+                "balanced_accuracy": float(view.balanced_accuracy),
+                "cramers_v": float(view.cramers_v),
+            }
+        )
 
-            if best is None or score_value > best.score_value:
-                best = ClusteringSearchResult(
-                    view=view,
-                    k=k,
-                    seed=seed,
-                    score_name=score_name,
-                    score_value=score_value,
-                    feature_columns=[],
-                    leaderboard=pd.DataFrame(),
-                )
+        if best is None or score_value > best.score_value:
+            best = ClusteringSearchResult(
+                view=view,
+                k=k,
+                seed=seed,
+                score_name=score_name,
+                score_value=score_value,
+                feature_columns=[],
+                leaderboard=pd.DataFrame(),
+            )
 
     assert best is not None
     leaderboard = pd.DataFrame(leaderboard_rows).sort_values(
@@ -382,15 +400,25 @@ def build_resampled_trajectory_list(
     order_col: str | None = None,
     n_resample: int = 50,
     traj_col: str = DEFAULT_ID_COLUMN,
+    show_progress: bool = False,
 ) -> tuple[np.ndarray, list[np.ndarray]]:
     """Build one fixed-length resampled point sequence per trajectory id."""
     d = df_xy.copy()
-    sort_cols = [traj_col, order_col] if order_col and order_col in d.columns else [traj_col, "__row_order"]
+    sort_cols = (
+        [traj_col, order_col] if order_col and order_col in d.columns else [traj_col, "__row_order"]
+    )
 
     traj_ids: list[str] = []
     trajectories: list[np.ndarray] = []
 
-    for tid, group in d.sort_values(sort_cols).groupby(traj_col, sort=False):
+    grouped = list(d.sort_values(sort_cols).groupby(traj_col, sort=False))
+    group_iter = tqdm(
+        grouped,
+        total=len(grouped),
+        desc="Resampling trajectories",
+        disable=not show_progress,
+    )
+    for tid, group in group_iter:
         points = group[["x", "y"]].dropna().to_numpy(dtype=float)
         if len(points) < 2:
             continue
@@ -421,11 +449,21 @@ def discrete_frechet(P: np.ndarray, Q: np.ndarray) -> float:
     return float(ca[-1, -1])
 
 
-def build_frechet_distance_matrix(trajectories: Sequence[np.ndarray]) -> np.ndarray:
+def build_frechet_distance_matrix(
+    trajectories: Sequence[np.ndarray],
+    *,
+    show_progress: bool = True,
+) -> np.ndarray:
     """Compute the full pairwise discrete-Frechet distance matrix."""
     n = len(trajectories)
     D = np.zeros((n, n), dtype=np.float32)
-    for i in range(n):
+    row_iter = tqdm(
+        range(n),
+        total=n,
+        desc="Frechet distance matrix",
+        disable=not show_progress,
+    )
+    for i in row_iter:
         for j in range(i + 1, n):
             dist = discrete_frechet(trajectories[i], trajectories[j])
             D[i, j] = dist
@@ -474,6 +512,7 @@ def search_best_frechet_dbscan(
     min_samples: int = 5,
     eps_percentiles: Sequence[int] = (50, 60, 70, 75, 80, 85, 90, 95),
     score_name: str = "accuracy",
+    show_progress: bool = True,
 ) -> FrechetDbscanResult:
     """Run Frechet+DBSCAN across eps percentiles and return the best baseline run."""
     if score_name not in {"accuracy", "balanced_accuracy"}:
@@ -488,20 +527,17 @@ def search_best_frechet_dbscan(
         order_col=order_col,
         n_resample=n_resample,
         traj_col=id_col,
+        show_progress=show_progress,
     )
     if len(trajectories) == 0:
         raise ValueError("No usable trajectories were found for Frechet clustering.")
 
-    traj_true = (
-        points.groupby(id_col)[label_col]
-        .agg(mode_or_first)
-        .reset_index()
-    )
+    traj_true = points.groupby(id_col)[label_col].agg(mode_or_first).reset_index()
     traj_true = traj_true[traj_true[id_col].astype(str).isin(traj_ids)].copy()
     traj_true = traj_true.set_index(traj_true[id_col].astype(str)).loc[traj_ids]
     y_true = traj_true[label_col].to_numpy(dtype=object)
 
-    D = build_frechet_distance_matrix(trajectories)
+    D = build_frechet_distance_matrix(trajectories, show_progress=show_progress)
     D_sorted = np.sort(D, axis=1)
     k_index = max(0, min(min_samples - 1, D_sorted.shape[1] - 1))
     kdist = D_sorted[:, k_index]
@@ -509,8 +545,14 @@ def search_best_frechet_dbscan(
     best: FrechetDbscanResult | None = None
     leaderboard_rows: list[dict[str, float | int]] = []
 
-    for q in eps_percentiles:
-        eps = float(np.percentile(kdist, q))
+    percentile_iter = tqdm(
+        eps_percentiles,
+        total=len(eps_percentiles),
+        desc="DBSCAN percentile sweep",
+        disable=not show_progress,
+    )
+    for q in percentile_iter:
+        eps = max(float(np.percentile(kdist, q)), 1e-9)
         labels = DBSCAN(eps=eps, min_samples=min_samples, metric="precomputed").fit_predict(D)
         view = evaluate_simulation_results(D, y_true, labels, best_k=None)
         ari = float(adjusted_rand_score(y_true.astype(str), labels.astype(str)))

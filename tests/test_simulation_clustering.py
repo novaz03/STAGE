@@ -16,7 +16,12 @@ def test_prepare_point_feature_table_builds_one_row_per_trajectory():
             "pt_idx": [1, 2, 1, 2],
             "latitude": [0.0, 1.0, 10.0, 11.0],
             "longitude": [0.0, 1.0, 10.0, 11.0],
-            "reference_lab": ["compact_local", "compact_local", "extensive_displacement", "extensive_displacement"],
+            "reference_lab": [
+                "compact_local",
+                "compact_local",
+                "extensive_displacement",
+                "extensive_displacement",
+            ],
         }
     )
 
@@ -59,6 +64,7 @@ def test_search_best_kmeans_finds_perfect_split_on_easy_data():
         k_values=[3],
         seeds=[0, 1, 2],
         score_name="accuracy",
+        show_progress=False,
     )
 
     assert result.k == 3
@@ -106,6 +112,7 @@ def test_search_best_frechet_dbscan_finds_clean_split_on_easy_trajectories():
         min_samples=1,
         eps_percentiles=[10, 50, 90],
         score_name="accuracy",
+        show_progress=False,
     )
 
     assert np.isclose(result.view.accuracy, 1.0)
