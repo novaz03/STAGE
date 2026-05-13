@@ -200,6 +200,30 @@ python scripts/subset_simulation_inputs.py \
     --extensive-displacement 75
 ```
 
+## Simulation clustering
+
+To estimate the best clustering correctness on a labeled subset, run the repeated
+KMeans search helper below. It tries multiple `k` values and random seeds, then
+reports the best aligned accuracy against `reference_lab`.
+
+```bash
+python scripts/cluster_simulation_subset.py \
+    --input hourly_locations_wide_25_25_75.csv \
+    --k-values 2,3,4,5,6 \
+    --n-seeds 20 \
+    --score accuracy
+```
+
+You can also point it at the point-level parquet. In that case it first aggregates
+the point rows into one trajectory-level feature vector per `traj_id`.
+
+```bash
+python scripts/cluster_simulation_subset.py \
+    --input ref_simulation_point_gdf_25_25_75.parquet \
+    --k-values 2,3,4,5,6 \
+    --n-seeds 20
+```
+
 ### Slurm example
 
 ```bash
