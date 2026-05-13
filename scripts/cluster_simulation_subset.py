@@ -35,6 +35,11 @@ def parse_args() -> argparse.Namespace:
         default="accuracy",
         help="Metric used to choose the best clustering run.",
     )
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable tqdm progress bars.",
+    )
     parser.add_argument("--topn", type=int, default=10, help="Number of leaderboard rows to print.")
     return parser.parse_args()
 
@@ -55,6 +60,7 @@ def main() -> None:
         k_values=k_values,
         seeds=seeds,
         score_name=args.score,
+        show_progress=not args.no_progress,
     )
 
     print(f"Input: {args.input}")

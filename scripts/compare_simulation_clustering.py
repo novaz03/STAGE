@@ -49,6 +49,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--n-resample", type=int, default=50)
     parser.add_argument("--min-samples", type=int, default=5)
     parser.add_argument("--eps-percentiles", default="50,60,70,75,80,85,90,95")
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable tqdm progress bars.",
+    )
     parser.add_argument("--topn", type=int, default=10)
     return parser.parse_args()
 
@@ -73,6 +78,7 @@ def main() -> None:
         k_values=k_values,
         seeds=seeds,
         score_name=args.score,
+        show_progress=not args.no_progress,
     )
 
     frechet_result = search_best_frechet_dbscan(
@@ -84,6 +90,7 @@ def main() -> None:
         min_samples=args.min_samples,
         eps_percentiles=eps_percentiles,
         score_name=args.score,
+        show_progress=not args.no_progress,
     )
 
     summary = [

@@ -41,6 +41,11 @@ def parse_args() -> argparse.Namespace:
         default="accuracy",
         help="Metric used to choose the best DBSCAN run across eps percentiles.",
     )
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable tqdm progress bars.",
+    )
     parser.add_argument("--topn", type=int, default=10, help="Number of leaderboard rows to print.")
     return parser.parse_args()
 
@@ -59,6 +64,7 @@ def main() -> None:
         min_samples=args.min_samples,
         eps_percentiles=eps_percentiles,
         score_name=args.score,
+        show_progress=not args.no_progress,
     )
 
     print(f"Input parquet: {args.input_parquet}")
